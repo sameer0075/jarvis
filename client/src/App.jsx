@@ -63,7 +63,6 @@ const ScanLine = () => (
 
 export default function App() {
   const [input, setInput] = useState("");
-  const [browserUrl, setBrowserUrl] = useState(null);
   const [autoSpeak, setAutoSpeak] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -71,14 +70,13 @@ export default function App() {
   const voiceTurnRef = useRef(false);
   const lastSpokenLenRef = useRef(0);
   const ttsBufferRef = useRef("");
+  const processedActionsRef = useRef(new Set());
 
   const { messages, isThinking, model, models, status, setModel, sendMessage, clearChat, checkStatus } = useJarvis();
-  const handleAction = useCallback((action) => {
+    const handleAction = useCallback((action) => {
     if (action.type === "OPEN_URL") {
-      setBrowserUrl(action.value);
-    } else if (action.type === "SEARCH") {
-      const q = encodeURIComponent(action.value);
-      setBrowserUrl(`https://www.google.com/search?q=${q}`);
+      window.open(action.value, "_blank", "noopener,noreferrer");
+      // DON'T call setBrowserUrl here — open externally only
     }
   }, []);
 
@@ -101,6 +99,22 @@ export default function App() {
       onTranscript: (text) => handleSend(text, { fromVoice: true }),
       onEnd: () => {},
     });
+
+      // ─── Auto-open URLs when assistant message arrives ───
+    useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant" || !last.actions?.length) return;
+    if (processedActionsRef.current.has(last.id)) return;
+
+    processedActionsRef.current.add(last.id);
+
+    for (const action of last.actions) {
+      if (action.type === "OPEN_URL") {
+        window.open(action.value, "_blank", "noopener,noreferrer");
+        // DON'T setBrowserUrl — external tab only
+      }
+    }
+  }, [messages]);
 
     useEffect(() => {
     const last = messages[messages.length - 1];
@@ -294,7 +308,7 @@ export default function App() {
       }}>
         {/* Chat Panel */}
         <div style={{
-          flex: browserUrl ? "0 0 45%" : "1",
+          flex: "1",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -462,19 +476,6 @@ export default function App() {
             </div>
           </div>
         </div>
-
-        {/* Browser Panel */}
-        {browserUrl && (
-          <div style={{
-            flex: "1",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-            borderLeft: "1px solid var(--border)",
-          }}>
-            <BrowserPanel url={browserUrl} onClose={() => setBrowserUrl(null)} />
-          </div>
-        )}
       </div>
     </div>
   );

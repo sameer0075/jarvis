@@ -27,11 +27,19 @@ const sessions = new Map();
 const SYSTEM_PROMPT = `You are Jarvis, a highly intelligent AI assistant inspired by Iron Man's JARVIS.
 You are sharp, witty, and concise. You speak with calm confidence.
 
-CAPABILITIES:
-1. When asked to open/visit/browse a website, add at the END of your reply:
-   [ACTION:OPEN_URL:https://example.com]
-2. For web searches: [ACTION:SEARCH:query terms]
-3. Use markdown formatting when helpful.`;
+ACTION RULES — ONLY add action tags when the user EXPLICITLY asks to open, visit, browse, or go to a website:
+1. If the user explicitly asks to open a specific website (e.g., "open Google Maps", "open github", "visit youtube"), add at the VERY END of your reply:
+   [ACTION:OPEN_URL:https://maps.google.com]
+   CRITICAL: Use the EXACT real URL for the site requested. Do NOT substitute with google.com or a search link.
+   Examples:
+   - "open Google Maps" → [ACTION:OPEN_URL:https://maps.google.com]
+   - "open GitHub" → [ACTION:OPEN_URL:https://github.com]
+   - "open YouTube" → [ACTION:OPEN_URL:https://youtube.com]
+   - "open Wikipedia" → [ACTION:OPEN_URL:https://wikipedia.org]
+2. If the user explicitly says "search" or "look up", add at the END:
+   [ACTION:SEARCH:user's exact query]
+3. If the user did NOT ask to open a site or search, do NOT add any action tags.
+4. Use markdown formatting when helpful.`;
 
 function getSession(id) {
   if (!sessions.has(id)) {
@@ -47,7 +55,11 @@ function parseActions(text) {
   const urlRe = /\[ACTION:OPEN_URL:([^\]]+)\]/g;
   const searchRe = /\[ACTION:SEARCH:([^\]]+)\]/g;
   let m;
-  while ((m = urlRe.exec(text))) actions.push({ type: "OPEN_URL", value: m[1].trim() });
+  while ((m = urlRe.exec(text))) {
+    let url = m[1].trim();
+    if (!url.startsWith("http")) url = "https://" + url;
+    actions.push({ type: "OPEN_URL", value: url });
+  }
   while ((m = searchRe.exec(text))) actions.push({ type: "SEARCH", value: m[1].trim() });
   const cleanText = text.replace(/\[ACTION:[^\]]+\]/g, "").trim();
   return { cleanText, actions };
