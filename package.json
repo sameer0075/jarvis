@@ -1,0 +1,18 @@
+{
+  "name": "jarvis-ai",
+  "version": "1.0.0",
+  "description": "Jarvis AI Assistant with Chat, Voice & URL Browser",
+  "scripts": {
+    "install:all": "npm install && cd client && npm install",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "node server/index.js",
+    "client": "cd client && npm run dev",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "ws": "^8.16.0"
+  }
+}
