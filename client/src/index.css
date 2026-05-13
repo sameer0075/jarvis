@@ -138,3 +138,43 @@ body {
   0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
   40% { transform: scale(1); opacity: 1; }
 }
+
+/* Holographic text glow */
+.hologram-text {
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+}
+
+/* Terminal cursor blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Subtle scan on JARVIS panels */
+@keyframes panelScan {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 100%; }
+}
+
+/* Make markdown code blocks more terminal-like */
+.md-content pre {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-left: 2px solid var(--arc-primary);
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.md-content code {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 0;
+  color: var(--arc-primary);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(0, 212, 255, 0.25);
+  color: #fff;
+}

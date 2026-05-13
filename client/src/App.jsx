@@ -10,29 +10,13 @@ import { useVoice } from "./hooks/useVoice.js";
 const GridBg = () => (
   <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.04, pointerEvents: "none" }} preserveAspectRatio="none">
     <defs>
-      <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
-        <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#00d4ff" strokeWidth="0.5" />
+      <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+        <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#00d4ff" strokeWidth="0.5" />
       </pattern>
     </defs>
     <rect width="100%" height="100%" fill="url(#grid)" />
   </svg>
 );
-
-const Corner = ({ pos }) => {
-  const top = pos.includes("top"), left = pos.includes("left");
-  return (
-    <div style={{
-      position: "absolute",
-      [top ? "top" : "bottom"]: 12, [left ? "left" : "right"]: 12,
-      width: 20, height: 20,
-      borderTop: top ? "2px solid rgba(0,212,255,0.4)" : "none",
-      borderBottom: !top ? "2px solid rgba(0,212,255,0.4)" : "none",
-      borderLeft: left ? "2px solid rgba(0,212,255,0.4)" : "none",
-      borderRight: !left ? "2px solid rgba(0,212,255,0.4)" : "none",
-      pointerEvents: "none",
-    }} />
-  );
-};
 
 const ScanLine = () => (
   <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
@@ -42,6 +26,14 @@ const ScanLine = () => (
       animation: "scan 8s linear infinite",
     }} />
   </div>
+);
+
+const HexDecoration = () => (
+  <svg style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "600px", height: "600px", opacity: 0.03, pointerEvents: "none", zIndex: 0 }} viewBox="0 0 100 100">
+    <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="none" stroke="#00d4ff" strokeWidth="0.3" />
+    <polygon points="50,20 80,35 80,65 50,80 20,65 20,35" fill="none" stroke="#00d4ff" strokeWidth="0.2" />
+    <circle cx="50" cy="50" r="45" fill="none" stroke="#00d4ff" strokeWidth="0.15" strokeDasharray="2 4" />
+  </svg>
 );
 
 export default function App() {
@@ -89,7 +81,7 @@ export default function App() {
     }
   }, [messages]);
 
-  // Auto-speak streaming TTS
+  // Streaming TTS
   useEffect(() => {
     const last = messages[messages.length - 1];
     if (!last || last.role !== "assistant") return;
@@ -129,104 +121,67 @@ export default function App() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  const suggestedPrompts = [
-    "Open wikipedia.org and summarize it",
-    "Search for latest AI news",
-    "What can you do?",
-    "Open github.com",
-  ];
-
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--bg-void)", position: "relative", overflow: "hidden" }}>
       <ScanLine />
       <GridBg />
+      <HexDecoration />
+
+      {/* Central background Arc Reactor */}
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 0, opacity: isThinking || isSpeaking ? 0.08 : 0.04, transition: "opacity 1s" }}>
+        <ArcReactor size={320} active={isThinking || isSpeaking} listening={isListening} speaking={isSpeaking} />
+      </div>
 
       {/* ── Header ── */}
       <header style={{
-        display: "flex", alignItems: "center", gap: "14px",
-        padding: "10px 20px",
-        background: "rgba(6,13,26,0.95)",
+        display: "flex", alignItems: "center", gap: "16px",
+        padding: "10px 24px",
+        background: "rgba(2,4,8,0.85)",
         borderBottom: "1px solid var(--border)",
-        backdropFilter: "blur(10px)",
+        backdropFilter: "blur(12px)",
         position: "relative", zIndex: 10, flexShrink: 0,
       }}>
-        <ArcReactor size={44} active={isThinking || isSpeaking} listening={isListening} speaking={isSpeaking} />
-
+        <ArcReactor size={40} active={isThinking || isSpeaking} listening={isListening} speaking={isSpeaking} />
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "18px", letterSpacing: "0.25em", color: "var(--arc-primary)", lineHeight: 1, textShadow: "0 0 20px rgba(0,212,255,0.5)" }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "16px", letterSpacing: "0.3em", color: "var(--arc-primary)", lineHeight: 1, textShadow: "0 0 20px rgba(0,212,255,0.4)" }}>
             J.A.R.V.I.S
           </h1>
-          <p style={{ fontSize: "9px", fontFamily: "var(--font-mono)", color: "var(--text-dim)", letterSpacing: "0.15em", marginTop: "2px" }}>
+          <p style={{ fontSize: "9px", fontFamily: "var(--font-mono)", color: "var(--arc-dim)", letterSpacing: "0.2em", marginTop: "3px" }}>
             JUST A RATHER VERY INTELLIGENT SYSTEM
           </p>
         </div>
 
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-
-          {/* ── Hands-Free Toggle ── */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px" }}>
           {supported.stt && (
-            <button
-              onClick={toggleHandsFree}
-              title={handsFreeActive ? "Disable hands-free mode" : "Enable hands-free mode — mic stays on continuously"}
-              style={{
-                padding: "5px 12px",
-                borderRadius: "4px",
-                border: `1px solid ${handsFreeActive ? "rgba(0,255,150,0.6)" : "var(--border)"}`,
-                background: handsFreeActive ? "rgba(0,255,150,0.1)" : "transparent",
-                color: handsFreeActive ? "rgba(0,255,150,0.95)" : "var(--text-dim)",
-                fontFamily: "var(--font-mono)",
-                fontSize: "10px",
-                cursor: "pointer",
-                letterSpacing: "0.08em",
-                transition: "all 0.2s",
-                display: "flex", alignItems: "center", gap: "7px",
-              }}
-            >
-              {/* Animated dot */}
-              <div style={{
-                width: 7, height: 7, borderRadius: "50%",
-                background: handsFreeActive
-                  ? (isListening ? "var(--arc-primary)" : "rgba(0,255,150,0.9)")
-                  : "var(--text-dim)",
-                boxShadow: handsFreeActive
-                  ? (isListening ? "0 0 8px var(--arc-primary)" : "0 0 6px rgba(0,255,150,0.9)")
-                  : "none",
-                animation: handsFreeActive ? "glowPulse 1.2s ease-in-out infinite" : "none",
-                flexShrink: 0,
-                transition: "background 0.3s",
-              }} />
-              {handsFreeActive
-                ? (isListening ? "🎙 LISTENING..." : isSpeaking ? "🔊 SPEAKING..." : "HANDS-FREE ON")
-                : "HANDS-FREE"}
+            <button onClick={toggleHandsFree} style={{
+              padding: "5px 12px", borderRadius: "2px",
+              border: `1px solid ${handsFreeActive ? "var(--arc-primary)" : "var(--border)"}`,
+              background: handsFreeActive ? "rgba(0,212,255,0.1)" : "transparent",
+              color: handsFreeActive ? "var(--arc-primary)" : "var(--text-dim)",
+              fontFamily: "var(--font-mono)", fontSize: "10px", cursor: "pointer",
+              letterSpacing: "0.1em", transition: "all 0.2s",
+            }}>
+              {handsFreeActive ? "● HANDS-FREE" : "HANDS-FREE"}
             </button>
           )}
-
-          {/* Auto-speak toggle */}
           {supported.tts && (
-            <button
-              onClick={() => setAutoSpeak((v) => !v)}
-              style={{
-                padding: "5px 10px", borderRadius: "4px",
-                border: `1px solid ${autoSpeak ? "var(--arc-primary)" : "var(--border)"}`,
-                background: autoSpeak ? "rgba(0,212,255,0.12)" : "transparent",
-                color: autoSpeak ? "var(--arc-primary)" : "var(--text-dim)",
-                fontFamily: "var(--font-mono)", fontSize: "10px",
-                cursor: "pointer", letterSpacing: "0.08em", transition: "all 0.2s",
-              }}
-            >
-              {autoSpeak ? "🔊 AUTO-SPEAK ON" : "🔈 AUTO-SPEAK OFF"}
+            <button onClick={() => setAutoSpeak(v => !v)} style={{
+              padding: "5px 10px", borderRadius: "2px",
+              border: `1px solid ${autoSpeak ? "var(--arc-primary)" : "var(--border)"}`,
+              background: autoSpeak ? "rgba(0,212,255,0.1)" : "transparent",
+              color: autoSpeak ? "var(--arc-primary)" : "var(--text-dim)",
+              fontFamily: "var(--font-mono)", fontSize: "10px", cursor: "pointer",
+              letterSpacing: "0.1em", transition: "all 0.2s",
+            }}>
+              {autoSpeak ? "TTS: ON" : "TTS: OFF"}
             </button>
           )}
-
-          {/* Clear */}
-          <button
-            onClick={clearChat}
-            style={{
-              background: "none", border: "1px solid var(--border)", borderRadius: "4px",
-              color: "var(--text-dim)", cursor: "pointer", padding: "5px 8px",
-              display: "flex", alignItems: "center", gap: "5px",
-              fontFamily: "var(--font-mono)", fontSize: "10px", transition: "all 0.2s",
-            }}
+          <button onClick={clearChat} style={{
+            background: "none", border: "1px solid var(--border)", borderRadius: "2px",
+            color: "var(--text-dim)", cursor: "pointer", padding: "5px 8px",
+            display: "flex", alignItems: "center", gap: "5px",
+            fontFamily: "var(--font-mono)", fontSize: "10px", transition: "all 0.2s",
+          }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--red-alert)"; e.currentTarget.style.borderColor = "var(--red-alert)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-dim)"; e.currentTarget.style.borderColor = "var(--border)"; }}
           >
@@ -235,134 +190,134 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── Status Bar ── */}
       <StatusBar status={status} model={model} models={models} onModelChange={setModel} onRefresh={checkStatus} />
 
-      {/* ── Hands-free active banner ── */}
-      {handsFreeActive && (
-        <div style={{
-          padding: "5px 16px",
-          background: isListening ? "rgba(0,212,255,0.06)" : "rgba(0,255,150,0.05)",
-          borderBottom: `1px solid ${isListening ? "rgba(0,212,255,0.2)" : "rgba(0,255,150,0.15)"}`,
-          display: "flex", alignItems: "center", gap: "8px",
-          fontFamily: "var(--font-mono)", fontSize: "10px",
-          color: isListening ? "var(--arc-primary)" : "rgba(0,255,150,0.7)",
-          letterSpacing: "0.1em", flexShrink: 0,
-          transition: "all 0.3s",
-        }}>
-          <div style={{
-            width: 6, height: 6, borderRadius: "50%",
-            background: isListening ? "var(--arc-primary)" : isSpeaking ? "rgba(255,180,0,0.9)" : "rgba(0,255,150,0.9)",
-            boxShadow: isListening ? "0 0 8px var(--arc-primary)" : "0 0 6px rgba(0,255,150,0.8)",
-            animation: "glowPulse 1.2s ease-in-out infinite",
-          }} />
-          {isListening
-            ? "🎙 LISTENING — speak your command..."
-            : isSpeaking
-            ? "🔊 JARVIS IS SPEAKING — mic will resume after..."
-            : "✅ HANDS-FREE ACTIVE — mic restarts automatically after each reply"}
-        </div>
-      )}
-
-      {/* ── Main ── */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative", zIndex: 1 }}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-
-          {/* Messages */}
-          <div ref={chatPanelRef} style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
-            {messages.map((msg) => (
-              <ChatMessage key={msg.id} msg={msg} onSpeak={supported.tts ? speak : null} onAction={handleAction} />
-            ))}
-
-            {messages.length === 1 && (
-              <div style={{ padding: "8px 16px 0" }}>
-                <p style={{ fontSize: "10px", fontFamily: "var(--font-mono)", color: "var(--text-dim)", letterSpacing: "0.1em", marginBottom: "8px" }}>
-                  SUGGESTED COMMANDS
-                </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {suggestedPrompts.map((p, i) => (
-                    <button key={i} onClick={() => handleSend(p)} style={{
-                      background: "var(--arc-faint)", border: "1px solid var(--border)", borderRadius: "4px",
-                      color: "var(--text-secondary)", fontFamily: "var(--font-body)", fontSize: "12px",
-                      cursor: "pointer", padding: "5px 10px", transition: "all 0.2s",
-                    }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--arc-primary)"; e.currentTarget.style.color = "var(--arc-primary)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-                    >{p}</button>
-                  ))}
-                </div>
+      {/* ── Main Viewport ── */}
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 1 }}>
+        {/* System Log */}
+        <div ref={chatPanelRef} style={{ flex: 1, overflowY: "auto", paddingTop: "16px", paddingBottom: "8px" }}>
+          {/* Welcome header in log */}
+          {messages.length <= 1 && (
+            <div style={{ padding: "0 24px 20px", borderBottom: "1px solid var(--border)", marginBottom: "16px" }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "11px", color: "var(--arc-primary)", letterSpacing: "0.2em", marginBottom: "8px" }}>
+                SYSTEM INITIALIZED
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.8 }}>
+                <span style={{ color: "var(--arc-dim)" }}>STATUS:</span> ONLINE<br />
+                <span style={{ color: "var(--arc-dim)" }}>MODEL:</span> {model}<br />
+                <span style={{ color: "var(--arc-dim)" }}>VOICE:</span> {supported.tts ? "ENABLED" : "DISABLED"}<br />
+                <span style={{ color: "var(--arc-dim)" }}>STT:</span> {supported.stt ? "ENABLED" : "DISABLED"}
+              </div>
+            </div>
+          )}
 
-          {/* ── Input Area ── */}
-          <div style={{
-            padding: "12px 16px",
-            background: "rgba(6,13,26,0.8)",
-            borderTop: "1px solid var(--border)",
-            backdropFilter: "blur(10px)",
-            position: "relative",
-          }}>
-            {["top-left", "top-right", "bottom-left", "bottom-right"].map((c) => <Corner key={c} pos={c} />)}
-            <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  isListening ? "Listening..." :
-                  handsFreeActive ? "Hands-free active — just speak, or type here..." :
-                  "Command Jarvis... (Enter to send, Shift+Enter for new line)"
-                }
-                rows={2}
-                style={{
-                  flex: 1, background: "var(--bg-card)",
-                  border: `1px solid ${handsFreeActive ? "rgba(0,255,150,0.25)" : "var(--border)"}`,
-                  borderRadius: "6px", color: "var(--text-primary)",
-                  fontFamily: "var(--font-body)", fontSize: "14px",
-                  padding: "10px 14px", outline: "none", resize: "none",
-                  lineHeight: 1.5, transition: "border-color 0.2s, box-shadow 0.2s",
-                }}
-                onFocus={(e) => { e.target.style.borderColor = "var(--arc-primary)"; e.target.style.boxShadow = "0 0 0 1px rgba(0,212,255,0.2)"; }}
-                onBlur={(e) => { e.target.style.borderColor = handsFreeActive ? "rgba(0,255,150,0.25)" : "var(--border)"; e.target.style.boxShadow = "none"; }}
-                disabled={isListening}
-              />
+          {messages.map((msg) => (
+            <ChatMessage key={msg.id} msg={msg} onSpeak={supported.tts ? speak : null} onAction={handleAction} />
+          ))}
 
+          {/* Suggestions as terminal commands */}
+          {messages.length === 1 && (
+            <div style={{ padding: "12px 24px", marginTop: "8px" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--arc-dim)", letterSpacing: "0.15em", marginBottom: "10px" }}>
+                // AVAILABLE PROTOCOLS
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <VoiceButton
-                  isListening={isListening} isSpeaking={isSpeaking}
-                  transcript={transcript} onStart={startListening}
-                  onStop={stopListening} onStopSpeaking={stopSpeaking} supported={supported}
-                />
-                <button
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isThinking}
-                  style={{
-                    background: input.trim() && !isThinking ? "linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,170,255,0.15))" : "var(--bg-card)",
-                    border: `1px solid ${input.trim() && !isThinking ? "var(--arc-primary)" : "var(--border)"}`,
-                    borderRadius: "6px",
-                    color: input.trim() && !isThinking ? "var(--arc-primary)" : "var(--text-dim)",
-                    cursor: input.trim() && !isThinking ? "pointer" : "not-allowed",
-                    padding: "8px 14px", display: "flex", alignItems: "center",
-                    justifyContent: "center", gap: "6px",
-                    fontFamily: "var(--font-display)", fontSize: "11px",
-                    letterSpacing: "0.1em", transition: "all 0.2s",
-                    boxShadow: input.trim() && !isThinking ? "0 0 10px rgba(0,212,255,0.2)" : "none",
-                    animation: input.trim() && !isThinking ? "glowPulse 2s infinite" : "none",
+                {[
+                  "Open wikipedia.org and summarize it",
+                  "Search for latest AI news",
+                  "What can you do?",
+                  "Open github.com",
+                ].map((p, i) => (
+                  <div key={i} onClick={() => handleSend(p)} style={{
+                    cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "12px",
+                    color: "var(--text-dim)", transition: "color 0.2s",
                   }}
-                >
-                  {isThinking ? (
-                    <div style={{ width: 14, height: 14, border: "2px solid var(--arc-dim)", borderTopColor: "var(--arc-primary)", borderRadius: "50%", animation: "rotate 0.8s linear infinite" }} />
-                  ) : <Send size={14} />}
-                  SEND
-                </button>
+                    onMouseEnter={(e) => e.currentTarget.style.color = "var(--arc-primary)"}
+                    onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-dim)"}
+                  >
+                    <span style={{ color: "var(--arc-dim)" }}>{`[CMD_${String(i + 1).padStart(2, "0")}]`}</span> {p}
+                  </div>
+                ))}
               </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* ── Terminal Input ── */}
+        <div style={{
+          borderTop: "1px solid var(--border)",
+          background: "rgba(2,4,8,0.92)",
+          backdropFilter: "blur(16px)",
+          position: "relative",
+          flexShrink: 0,
+        }}>
+          {/* Top accent line */}
+          <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--arc-primary), transparent)", opacity: 0.3 }} />
+
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", padding: "14px 24px" }}>
+            <span style={{
+              color: "var(--arc-primary)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "16px",
+              paddingBottom: "10px",
+              textShadow: "0 0 10px var(--arc-primary)",
+            }}>❯</span>
+
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isListening ? "Listening..." : handsFreeActive ? "Hands-free active. Speak or type command..." : "Enter command..."}
+              rows={1}
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "14px",
+                padding: "8px 0",
+                outline: "none",
+                resize: "none",
+                lineHeight: 1.6,
+                caretColor: "var(--arc-primary)",
+              }}
+              disabled={isListening}
+            />
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingBottom: "4px" }}>
+              <VoiceButton
+                isListening={isListening} isSpeaking={isSpeaking}
+                transcript={transcript} onStart={startListening}
+                onStop={stopListening} onStopSpeaking={stopSpeaking} supported={supported}
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={!input.trim() || isThinking}
+                style={{
+                  background: input.trim() && !isThinking ? "rgba(0,212,255,0.12)" : "transparent",
+                  border: `1px solid ${input.trim() && !isThinking ? "var(--arc-primary)" : "var(--border)"}`,
+                  borderRadius: "2px",
+                  color: input.trim() && !isThinking ? "var(--arc-primary)" : "var(--text-dim)",
+                  cursor: input.trim() && !isThinking ? "pointer" : "not-allowed",
+                  padding: "7px 14px",
+                  display: "flex", alignItems: "center", gap: "6px",
+                  fontFamily: "var(--font-mono)", fontSize: "10px",
+                  letterSpacing: "0.15em", transition: "all 0.2s",
+                }}
+              >
+                {isThinking ? (
+                  <div style={{ width: 12, height: 12, border: "2px solid var(--arc-dim)", borderTopColor: "var(--arc-primary)", borderRadius: "50%", animation: "rotate 0.8s linear infinite" }} />
+                ) : <Send size={12} />}
+                EXECUTE
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -5,83 +5,52 @@ export default function VoiceButton({ isListening, isSpeaking, transcript, onSta
   if (!supported.stt) return null;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-      {/* Stop speaking */}
+    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
       {isSpeaking && (
-        <button
-          onClick={onStopSpeaking}
-          title="Stop speaking"
-          style={{
-            background: "rgba(255,209,102,0.1)",
-            border: "1px solid rgba(255,209,102,0.4)",
-            borderRadius: "6px",
-            color: "var(--gold)",
-            cursor: "pointer",
-            padding: "8px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "all 0.2s",
-          }}
-        >
-          <VolumeX size={16} />
+        <button onClick={onStopSpeaking} title="Stop speaking" style={{
+          background: "none", border: "1px solid rgba(255,209,102,0.3)", borderRadius: "2px",
+          color: "var(--gold)", cursor: "pointer", padding: "6px",
+          display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s",
+        }}>
+          <VolumeX size={14} />
         </button>
       )}
 
-      {/* Mic button */}
       <button
         onClick={isListening ? onStop : onStart}
         title={isListening ? "Stop listening" : "Start voice input"}
         style={{
           position: "relative",
-          background: isListening
-            ? "rgba(255,59,92,0.15)"
-            : "rgba(0,212,255,0.08)",
-          border: `1px solid ${isListening ? "rgba(255,59,92,0.6)" : "rgba(0,212,255,0.3)"}`,
-          borderRadius: "6px",
+          background: isListening ? "rgba(255,59,92,0.1)" : "rgba(0,212,255,0.05)",
+          border: `1px solid ${isListening ? "rgba(255,59,92,0.5)" : "rgba(0,212,255,0.2)"}`,
+          borderRadius: "2px",
           color: isListening ? "var(--red-alert)" : "var(--arc-primary)",
           cursor: "pointer",
-          padding: "8px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          padding: "6px",
+          display: "flex", alignItems: "center", justifyContent: "center",
           transition: "all 0.2s",
-          boxShadow: isListening
-            ? "0 0 12px rgba(255,59,92,0.4)"
-            : "none",
+          boxShadow: isListening ? "0 0 10px rgba(255,59,92,0.3)" : "none",
         }}
       >
-        {/* Ripple effect when listening */}
         {isListening && (
           <>
             {[0, 0.4, 0.8].map((delay, i) => (
-              <span
-                key={i}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "6px",
-                  border: "1px solid rgba(255,59,92,0.5)",
-                  animation: `ripple 1.6s ${delay}s ease-out infinite`,
-                }}
-              />
+              <span key={i} style={{
+                position: "absolute", inset: 0, borderRadius: "2px",
+                border: "1px solid rgba(255,59,92,0.4)",
+                animation: `ripple 1.6s ${delay}s ease-out infinite`,
+              }} />
             ))}
           </>
         )}
-        {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+        {isListening ? <MicOff size={14} /> : <Mic size={14} />}
       </button>
 
-      {/* Transcript preview */}
       {isListening && transcript && (
         <span style={{
-          fontSize: "12px",
-          fontFamily: "var(--font-mono)",
-          color: "var(--red-alert)",
-          maxWidth: "140px",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          animation: "pulse 1s infinite",
+          fontSize: "11px", fontFamily: "var(--font-mono)",
+          color: "var(--red-alert)", maxWidth: "120px",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
           {transcript}
         </span>
