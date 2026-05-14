@@ -99,8 +99,9 @@ const HoloPanel = ({ children, title, icon: Icon, accent = "#00d4ff", live = fal
 );
 
 /* ─── System Diagnostics ─── */
-function SystemDiagnostics() {
-  const [stats, setStats] = useState({ cpu: 34, ram: 62, net: 88 });
+function SystemDiagnostics({statsData}) {
+
+  const [stats, setStats] = useState({ cpu: statsData.cpu, ram: statsData.ram, net: statsData.net });
   
   useEffect(() => {
     const iv = setInterval(() => {
@@ -114,9 +115,9 @@ function SystemDiagnostics() {
   }, []);
   
   const bars = [
-    { label: "CPU CORE", value: Math.round(stats.cpu), color: "#00d4ff", icon: Cpu },
-    { label: "MEMORY", value: Math.round(stats.ram), color: "#00d4ff", icon: Activity },
-    { label: "NETWORK", value: Math.round(stats.net), color: "var(--green-ok)", icon: Wifi },
+    { label: "CPU CORE", value: Math.round(statsData.cpu), color: "#00d4ff", icon: Cpu },
+    { label: "MEMORY", value: Math.round(statsData.ram), color: "#00d4ff", icon: Activity },
+    { label: "NETWORK", value: Math.round(statsData.net), color: "var(--green-ok)", icon: Wifi },
   ];
   
   return (
@@ -317,7 +318,7 @@ function IntelFeed({ articles }) {
 }
 
 /* ─── Main Export ─── */
-export default function JarvisWidgets({ weatherData, newsData }) {
+export default function JarvisWidgets({ weatherData, newsData, statsData }) {
   return (
     <div style={{
       width: "420px", flexShrink: 0,
@@ -341,7 +342,7 @@ export default function JarvisWidgets({ weatherData, newsData }) {
       </HoloPanel>
       
       <HoloPanel title="SYSTEM DIAGNOSTICS" icon={Terminal} accent="var(--green-ok)">
-        <SystemDiagnostics />
+        <SystemDiagnostics statsData={statsData}/>
       </HoloPanel>
       
       <HoloPanel title="GLOBAL CHRONOMETER" icon={Clock} accent="#00d4ff">

@@ -42,6 +42,7 @@ export default function App() {
   const [autoSpeak, setAutoSpeak] = useState(false);
   const [weatherState, setWeatherState] = useState(false);
   const [newsState, setNewsState] = useState(false);
+  const [stats, setStats] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const chatPanelRef = useRef(null);
@@ -99,6 +100,17 @@ export default function App() {
     console.log("weather",weather)
     setWeatherState(weather)
   }
+
+  const fetchStats = async () => {
+    const res = await fetch(`${API_BASE}/api/get-system-stats`);
+    const data = await res.json();
+
+    setStats(data);
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   // Auto-open URLs
   useEffect(() => {
@@ -366,7 +378,7 @@ export default function App() {
           </div>
         </div>
         </div>
-        <JarvisWidgets weatherData={weatherState} newsData={newsState} />
+        <JarvisWidgets weatherData={weatherState} newsData={newsState} statsData={stats} />
       </main>
     </div>
   );

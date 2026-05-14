@@ -5,6 +5,7 @@ const { runChat } = require("../services/chat");
 const { DEFAULT_MODEL } = require("../utils/config");
 const { fetchTrendingNews, fetchQueryNews } = require("../services/tools/news");
 const { fetchWeatherDetails } = require("../services/tools/weather");
+const { getSystemStats } = require("../services/tools/system-info");
 
 const router = Router();
 
@@ -72,6 +73,16 @@ router.get("/search-news/:query", async (req,res) => {
 router.get("/get-weather-details/:city", async (req,res) => {
   try {
     const result = await fetchWeatherDetails(req.params.city)
+    res.json(result);
+  } catch (e) {
+    console.error("[REST]", e.message);
+    res.status(500).json({ error: e.message });
+  }
+})
+
+router.get("/get-system-stats", async (req,res) => {
+  try {
+    const result = await getSystemStats()
     res.json(result);
   } catch (e) {
     console.error("[REST]", e.message);
