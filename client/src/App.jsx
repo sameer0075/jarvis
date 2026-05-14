@@ -40,6 +40,8 @@ const HexDecoration = () => (
 export default function App() {
   const [input, setInput] = useState("");
   const [autoSpeak, setAutoSpeak] = useState(false);
+  const [weatherState, setWeatherState] = useState(false);
+  const [newsState, setNewsState] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const chatPanelRef = useRef(null);
@@ -48,10 +50,12 @@ export default function App() {
   const ttsBufferRef = useRef("");
   const processedActionsRef = useRef(new Set());
 
+  const API_BASE = "http://localhost:3001";
+
   const { messages, isThinking, model, models, status, setModel, sendMessage, clearChat, checkStatus } = useJarvis();
   const lastAssistant = messages.filter(m => m.role === "assistant").pop();
-  const weatherState = lastAssistant?.widgetData?.weather || null;
-  const newsState = lastAssistant?.widgetData?.news || null;
+  // const weatherState = lastAssistant?.widgetData?.weather || null;
+  // const newsState = lastAssistant?.widgetData?.news || null;
   const handleAction = useCallback((action) => {
     if (action.type === "OPEN_URL") window.open(action.value, "_blank", "noopener,noreferrer");
   }, []);
@@ -59,6 +63,7 @@ export default function App() {
   const handleSend = useCallback((text, opts = {}) => {
     const msg = (text || input).trim();
     if (!msg) return;
+    fetchQueryNews(msg)
     setInput("");
     if (opts.fromVoice) voiceTurnRef.current = true;
     sendMessage(msg);
@@ -73,6 +78,28 @@ export default function App() {
     onEnd: () => {},
   });
 
+  const fetchTrendingNews = async() => {
+    const result = await fetch(`${API_BASE}/api/trending-news`);
+    const data = await result.json()
+    setNewsState(data)
+  }
+
+  const fetchQueryNews = async(query) => {
+    const result = await fetch(`${API_BASE}/api/search-news/${query}`);
+    const data = await result.json()
+    setNewsState(data)
+  }
+
+  const fetchCityFromIp = async () => {
+    const response = await fetch("https://ipinfo.io/json")
+    const data = await response.json()
+    console.log("response",data)
+    const result = await fetch(`${API_BASE}/api/get-weather-details/${data.city}`);
+    const weather = await result.json()
+    console.log("weather",weather)
+    setWeatherState(weather)
+  }
+
   // Auto-open URLs
   useEffect(() => {
     const last = messages[messages.length - 1];
@@ -83,6 +110,21 @@ export default function App() {
       if (action.type === "OPEN_URL") window.open(action.value, "_blank", "noopener,noreferrer");
     }
   }, [messages]);
+
+  useEffect(() => {
+    if(lastAssistant) {
+        const weatherData = lastAssistant?.widgetData?.weather || null;
+        const newsData = lastAssistant?.widgetData?.news || null;
+        if(!newsState) {
+          setNewsState(newsData)
+        }
+        setWeatherState(weatherData)
+    }
+  },[lastAssistant])
+
+  useEffect(() => {
+    fetchCityFromIp()
+  },[])
 
   // Streaming TTS
   useEffect(() => {
@@ -120,6 +162,9 @@ export default function App() {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  useEffect(()=>{
+    fetchTrendingNews()
+  },[])
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };

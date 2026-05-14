@@ -3,6 +3,8 @@ const { getTags } = require("../services/ollama");
 const { getSession, deleteSession } = require("../utils/session");
 const { runChat } = require("../services/chat");
 const { DEFAULT_MODEL } = require("../utils/config");
+const { fetchTrendingNews, fetchQueryNews } = require("../services/tools/news");
+const { fetchWeatherDetails } = require("../services/tools/weather");
 
 const router = Router();
 
@@ -46,5 +48,35 @@ router.post("/chat", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+router.get("/trending-news", async (req,res) => {
+  try {
+    const result = await fetchTrendingNews('bbc-news,cnn,al-jazeera-english,the-verge,reuters,associated-press')
+    res.json(result);
+  } catch (e) {
+    console.error("[REST]", e.message);
+    res.status(500).json({ error: e.message });
+  }
+})
+
+router.get("/search-news/:query", async (req,res) => {
+  try {
+    const result = await fetchQueryNews(req.params.query)
+    res.json(result);
+  } catch (e) {
+    console.error("[REST]", e.message);
+    res.status(500).json({ error: e.message });
+  }
+})
+
+router.get("/get-weather-details/:city", async (req,res) => {
+  try {
+    const result = await fetchWeatherDetails(req.params.city)
+    res.json(result);
+  } catch (e) {
+    console.error("[REST]", e.message);
+    res.status(500).json({ error: e.message });
+  }
+})
 
 module.exports = router;

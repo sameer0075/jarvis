@@ -304,7 +304,7 @@ function IntelFeed({ articles }) {
               fontSize: "9px", color: "var(--arc-primary)", fontFamily: "var(--font-mono)",
               letterSpacing: "0.1em", padding: "2px 6px", border: "1px solid rgba(0,212,255,0.15)", borderRadius: "1px",
             }}>
-              {a.source?.toUpperCase()}
+              {typeof a.source == 'string' ? a.source?.toUpperCase() : a.source?.name?.toUpperCase()}
             </span>
             <span style={{ fontSize: "9px", color: "var(--arc-dim)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em" }}>
               {a.time}

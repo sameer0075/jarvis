@@ -25,9 +25,36 @@ async function fetchWeather(city) {
 
     return result;
   } catch (e) {
+    console.log("error",e)
+    return JSON.stringify({ error: e.message });
+  }
+}
+
+async function fetchWeatherDetails(city) {
+  try {
+    const url = `${BASE_URL}?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    const d = await res.json();
+    console.log("weather result",d)
+
+    if (d.cod !== 200) return JSON.stringify({ error: d.message });
+
+    const result = {
+      city: d.name,
+      country: d.sys.country,
+      temp: Math.round(d.main.temp),
+      feels_like: Math.round(d.main.feels_like),
+      humidity: d.main.humidity,
+      wind_kph: Math.round(d.wind.speed * 3.6),
+      description: d.weather[0].description,
+      icon: d.weather[0].icon,
+    };
+
+    return result;
+  } catch (e) {
     console.log("error weather",e)
     return JSON.stringify({ error: e.message });
   }
 }
 
-module.exports = { fetchWeather };
+module.exports = { fetchWeather, fetchWeatherDetails };

@@ -3,10 +3,11 @@ const { fetchNews } = require("./news");
 const { getTime } = require("./time");
 
 async function executeTool(tool, args) {
+  console.log("args args",args)
   switch (tool) {
     case "get_weather": return fetchWeather(args.city);
     case "get_time":    return getTime(args.city);
-    case "get_news":    return fetchNews(args.query);
+    // case "get_news":    return fetchNews(args.query);
     default:            return JSON.stringify({ error: `Unknown tool: ${tool}` });
   }
 }
