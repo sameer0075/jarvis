@@ -7,6 +7,7 @@ import VoiceButton from "./components/VoiceButton.jsx";
 import { useJarvis } from "./hooks/useJarvis.js";
 import { useVoice } from "./hooks/useVoice.js";
 import JarvisWidgets from "./components/JarvisWidgets.jsx";
+import FileBrowser from "./components/FileBrowser.jsx";
 
 const GridBg = () => (
   <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.04, pointerEvents: "none" }} preserveAspectRatio="none">
@@ -43,6 +44,7 @@ export default function App() {
   const [weatherState, setWeatherState] = useState(false);
   const [newsState, setNewsState] = useState(false);
   const [stats, setStats] = useState(false);
+  const [fileBrowser, setFileBrowser] = useState({ open: false, data: null });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const chatPanelRef = useRef(null);
@@ -107,6 +109,18 @@ export default function App() {
 
     setStats(data);
   };
+
+  useEffect(() => {
+    if (lastAssistant?.widgetData?.filesystem) {
+      const fs = lastAssistant.widgetData.filesystem;
+      if (fs.type === "list_dir" && fs.ok) {
+        setFileBrowser({ open: true, data: fs });
+      }
+      if (fs.type === "open_file") {
+        // File was opened server-side, just show status in chat
+      }
+    }
+  }, [lastAssistant]);
 
   useEffect(() => {
     fetchStats();
@@ -380,6 +394,12 @@ export default function App() {
         </div>
         <JarvisWidgets weatherData={weatherState} newsData={newsState} statsData={stats} />
       </main>
+      {fileBrowser.open && (
+        <FileBrowser
+          initialData={fileBrowser.data}
+          onClose={() => setFileBrowser({ open: false, data: null })}
+        />
+      )}
     </div>
   );
 }

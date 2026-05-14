@@ -6,6 +6,7 @@ const { DEFAULT_MODEL } = require("../utils/config");
 const { fetchTrendingNews, fetchQueryNews } = require("../services/tools/news");
 const { fetchWeatherDetails } = require("../services/tools/weather");
 const { getSystemStats } = require("../services/tools/system-info");
+const { listDirectory, openFile, searchFiles } = require("../services/tools/filesystem");
 
 const router = Router();
 
@@ -89,5 +90,25 @@ router.get("/get-system-stats", async (req,res) => {
     res.status(500).json({ error: e.message });
   }
 })
+
+router.get("/fs/list", async (req, res) => {
+  const { path: dirPath = "home" } = req.query;
+  const result = await listDirectory(dirPath);
+  res.json(result);
+});
+
+router.post("/fs/open", async (req, res) => {
+  const { path: filePath } = req.body;
+  if (!filePath) return res.status(400).json({ error: "path required" });
+  const result = await openFile(filePath);
+  res.json(result);
+});
+
+router.get("/fs/search", async (req, res) => {
+  const { path: dirPath = "home", query } = req.query;
+  if (!query) return res.status(400).json({ error: "query required" });
+  const result = await searchFiles(dirPath, query);
+  res.json(result);
+});
 
 module.exports = router;
