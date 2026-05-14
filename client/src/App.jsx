@@ -6,6 +6,7 @@ import ChatMessage from "./components/ChatMessage.jsx";
 import VoiceButton from "./components/VoiceButton.jsx";
 import { useJarvis } from "./hooks/useJarvis.js";
 import { useVoice } from "./hooks/useVoice.js";
+import JarvisWidgets from "./components/JarvisWidgets.jsx";
 
 const GridBg = () => (
   <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.04, pointerEvents: "none" }} preserveAspectRatio="none">
@@ -48,7 +49,9 @@ export default function App() {
   const processedActionsRef = useRef(new Set());
 
   const { messages, isThinking, model, models, status, setModel, sendMessage, clearChat, checkStatus } = useJarvis();
-
+  const lastAssistant = messages.filter(m => m.role === "assistant").pop();
+  const weatherState = lastAssistant?.widgetData?.weather || null;
+  const newsState = lastAssistant?.widgetData?.news || null;
   const handleAction = useCallback((action) => {
     if (action.type === "OPEN_URL") window.open(action.value, "_blank", "noopener,noreferrer");
   }, []);
@@ -193,65 +196,65 @@ export default function App() {
       <StatusBar status={status} model={model} models={models} onModelChange={setModel} onRefresh={checkStatus} />
 
       {/* ── Main Viewport ── */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 1 }}>
-        {/* System Log */}
-        <div ref={chatPanelRef} style={{ flex: 1, overflowY: "auto", paddingTop: "16px", paddingBottom: "8px" }}>
-          {/* Welcome header in log */}
-          {messages.length <= 1 && (
-            <div style={{ padding: "0 24px 20px", borderBottom: "1px solid var(--border)", marginBottom: "16px" }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: "11px", color: "var(--arc-primary)", letterSpacing: "0.2em", marginBottom: "8px" }}>
-                SYSTEM INITIALIZED
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative", zIndex: 1 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+          {/* System Log */}
+          <div ref={chatPanelRef} style={{ flex: 1, overflowY: "auto", paddingTop: "16px", paddingBottom: "8px" }}>
+            {/* Welcome header in log */}
+            {messages.length <= 1 && (
+              <div style={{ padding: "0 24px 20px", borderBottom: "1px solid var(--border)", marginBottom: "16px" }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: "11px", color: "var(--arc-primary)", letterSpacing: "0.2em", marginBottom: "8px" }}>
+                  SYSTEM INITIALIZED
+                </div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.8 }}>
+                  <span style={{ color: "var(--arc-dim)" }}>STATUS:</span> ONLINE<br />
+                  <span style={{ color: "var(--arc-dim)" }}>MODEL:</span> {model}<br />
+                  <span style={{ color: "var(--arc-dim)" }}>VOICE:</span> {supported.tts ? "ENABLED" : "DISABLED"}<br />
+                  <span style={{ color: "var(--arc-dim)" }}>STT:</span> {supported.stt ? "ENABLED" : "DISABLED"}
+                </div>
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.8 }}>
-                <span style={{ color: "var(--arc-dim)" }}>STATUS:</span> ONLINE<br />
-                <span style={{ color: "var(--arc-dim)" }}>MODEL:</span> {model}<br />
-                <span style={{ color: "var(--arc-dim)" }}>VOICE:</span> {supported.tts ? "ENABLED" : "DISABLED"}<br />
-                <span style={{ color: "var(--arc-dim)" }}>STT:</span> {supported.stt ? "ENABLED" : "DISABLED"}
+            )}
+
+            {messages.map((msg) => (
+              <ChatMessage key={msg.id} msg={msg} onSpeak={supported.tts ? speak : null} onAction={handleAction} />
+            ))}
+
+            {/* Suggestions as terminal commands */}
+            {messages.length === 1 && (
+              <div style={{ padding: "12px 24px", marginTop: "8px" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--arc-dim)", letterSpacing: "0.15em", marginBottom: "10px" }}>
+                  // AVAILABLE PROTOCOLS
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {[
+                    "Open wikipedia.org and summarize it",
+                    "Search for latest AI news",
+                    "What can you do?",
+                    "Open github.com",
+                  ].map((p, i) => (
+                    <div key={i} onClick={() => handleSend(p)} style={{
+                      cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "12px",
+                      color: "var(--text-dim)", transition: "color 0.2s",
+                    }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = "var(--arc-primary)"}
+                      onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-dim)"}
+                    >
+                      <span style={{ color: "var(--arc-dim)" }}>{`[CMD_${String(i + 1).padStart(2, "0")}]`}</span> {p}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {messages.map((msg) => (
-            <ChatMessage key={msg.id} msg={msg} onSpeak={supported.tts ? speak : null} onAction={handleAction} />
-          ))}
-
-          {/* Suggestions as terminal commands */}
-          {messages.length === 1 && (
-            <div style={{ padding: "12px 24px", marginTop: "8px" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--arc-dim)", letterSpacing: "0.15em", marginBottom: "10px" }}>
-                // AVAILABLE PROTOCOLS
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {[
-                  "Open wikipedia.org and summarize it",
-                  "Search for latest AI news",
-                  "What can you do?",
-                  "Open github.com",
-                ].map((p, i) => (
-                  <div key={i} onClick={() => handleSend(p)} style={{
-                    cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "12px",
-                    color: "var(--text-dim)", transition: "color 0.2s",
-                  }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = "var(--arc-primary)"}
-                    onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-dim)"}
-                  >
-                    <span style={{ color: "var(--arc-dim)" }}>{`[CMD_${String(i + 1).padStart(2, "0")}]`}</span> {p}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* ── Terminal Input ── */}
+            <div ref={messagesEndRef} />
+          </div>
+                  {/* ── Terminal Input ── */}
         <div style={{
-          borderTop: "1px solid var(--border)",
-          background: "rgba(2,4,8,0.92)",
-          backdropFilter: "blur(16px)",
-          position: "relative",
-          flexShrink: 0,
+            borderTop: "1px solid var(--border)",
+            background: "rgba(2,4,8,0.92)",
+            backdropFilter: "blur(16px)",
+            position: "relative",
+            flexShrink: 0,
         }}>
           {/* Top accent line */}
           <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--arc-primary), transparent)", opacity: 0.3 }} />
@@ -317,6 +320,8 @@ export default function App() {
             </div>
           </div>
         </div>
+        </div>
+        <JarvisWidgets weatherData={weatherState} newsData={newsState} />
       </main>
     </div>
   );

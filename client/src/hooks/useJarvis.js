@@ -96,7 +96,13 @@ export function useJarvis() {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === streamId
-                    ? { ...m, content: data.fullText, actions: data.actions || [], streaming: false }
+                    ? {
+                        ...m,
+                        content: data.fullText,
+                        actions: data.actions || [],
+                        widgetData: data.widgetData || null, // ← ADD THIS LINE
+                        streaming: false,
+                      }
                     : m
                 )
               );
@@ -138,7 +144,7 @@ export function useJarvis() {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === streamId
-                ? { ...m, content: d.reply, actions: d.actions || [], streaming: false }
+                ? { ...m, content: d.reply, actions: d.actions || [],widgetData: d.widgetData || null, streaming: false }
                 : m
             )
           );
@@ -175,6 +181,7 @@ export function useJarvis() {
         role: "assistant",
         content: "Memory cleared. Ready for a fresh session, sir.",
         actions: [],
+        widgetData: null,
         ts: Date.now(),
       },
     ]);
