@@ -34,10 +34,16 @@ function extractEntities(message) {
   const hasWeather    = /\bweather\b/.test(msg);
   const hasTime       = /\b(time|clock|what time)\b/.test(msg);
   const hasNews       = /\b(news|headlines?|latest|breaking)\b/.test(msg);
-  const hasListDir    = /\b(show|list|browse|what('s| is) in|open)\b/.test(msg)
-                     && /\b(folder|directory|downloads|desktop|documents|pictures|music|videos|home)\b/.test(msg);
-  const hasOpenFile   = /\b(open|launch|run|start)\b/.test(msg) && /\.[a-z0-9]{1,5}\b/.test(msg);
-  const hasSearchFile = /\b(find|search|look for)\b/.test(msg) && /\b(file|folder|document|\.)\b/.test(msg);
+  const hasListDir = /\b(show|list|browse|open)\b/.test(msg)
+                && /\b(folder|directory|downloads|desktop|documents|pictures|music|videos|home)\b/.test(msg)
+                && !/https?:\/\//.test(msg)           // not a URL
+                && !/\w+\.(com|org|net|io|dev|co|app|ai|uk|edu)\b/.test(msg);
+  const hasOpenFile = /\b(open|launch|run|start)\b/.test(msg)
+                 && /\.[a-z0-9]{1,5}\b/.test(msg)
+                 && !/https?:\/\//.test(msg)          // not a URL
+                 && !/\.(com|org|net|io|dev|co|app|ai)\b/.test(msg);
+  const hasSearchFile = /\b(find|search|look for)\b/.test(msg)
+                   && /\b(file|folder|document)\b/.test(msg);
 
   const city       = (hasWeather || hasTime) ? extractCity(msg) : null;
   const newsQuery  = hasNews ? extractNewsQuery(msg) : null;
