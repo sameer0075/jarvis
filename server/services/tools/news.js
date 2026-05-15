@@ -1,53 +1,102 @@
 require("dotenv").config();
 const Parser = require("rss-parser");
-const parser = new Parser();
-const API_KEY = 'a9e145f998364e4488754faa0f8966f2';
-const BASE_URL = "https://newsapi.org/v2";
 
+const parser = new Parser({
+  timeout: 6000,
+});
+
+function formatArticle(item) {
+  return {
+    title: item.title || "No title",
+    url: item.link || "",
+    source:
+      item.source?.title ||
+      item.creator ||
+      item.author ||
+      "Google News",
+    time: item.pubDate
+      ? new Date(item.pubDate).toLocaleString()
+      : "Unknown",
+    publishedAt: item.pubDate || new Date().toISOString(),
+  };
+}
+
+/* ──────────────────────────────────────────────
+   SEARCH NEWS
+────────────────────────────────────────────── */
 async function fetchNews(query) {
   try {
-    const url = `${BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=5&apiKey=${API_KEY}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-    const d = await res.json();
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(
+      query
+    )}&hl=en-US&gl=US&ceid=US:en`;
 
-    if (d.status !== "ok") return JSON.stringify({ error: d.message });
+    const feed = await parser.parseURL(url);
 
-    const result = d.articles
-      .map((a) => `• ${a.title} (${a.source.name}, ${new Date(a.publishedAt).toLocaleDateString()})`)
+    const articles = (feed.items || [])
+      .slice(0, 5)
+      .map(formatArticle);
+
+    const result = articles
+      .map(
+        (a) =>
+          `• ${a.title} (${a.source}, ${new Date(
+            a.publishedAt
+          ).toLocaleDateString()})`
+      )
       .join("\n");
 
     return result;
   } catch (e) {
+    console.log("fetchNews error", e);
     return JSON.stringify({ error: e.message });
   }
 }
 
-async function fetchTrendingNews(sources) {
+/* ──────────────────────────────────────────────
+   TRENDING NEWS
+────────────────────────────────────────────── */
+async function fetchTrendingNews() {
   try {
-    const url = `${BASE_URL}/top-headlines?sources=${sources}&sortBy=publishedAt&pageSize=5&apiKey=${API_KEY}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-    const d = await res.json();
+    const url =
+      "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en";
 
-    if (d.status !== "ok") return JSON.stringify({ error: d.message });
+    const feed = await parser.parseURL(url);
 
-    return d.articles;
+    const articles = (feed.items || [])
+      .slice(0, 10)
+      .map(formatArticle);
+
+    return articles;
   } catch (e) {
-    return JSON.stringify({ error: e.message });
+    console.log("fetchTrendingNews error", e);
+    return [];
   }
 }
 
+/* ──────────────────────────────────────────────
+   QUERY NEWS
+────────────────────────────────────────────── */
 async function fetchQueryNews(query) {
   try {
-    const url = `${BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=5&apiKey=${API_KEY}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-    const d = await res.json();
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(
+      query
+    )}&hl=en-US&gl=US&ceid=US:en`;
 
-    if (d.status !== "ok") return JSON.stringify({ error: d.message });
+    const feed = await parser.parseURL(url);
 
-    return d.articles;
+    const articles = (feed.items || [])
+      .slice(0, 10)
+      .map(formatArticle);
+
+    return articles;
   } catch (e) {
-    return JSON.stringify({ error: e.message });
+    console.log("fetchQueryNews error", e);
+    return [];
   }
 }
 
-module.exports = { fetchNews, fetchTrendingNews, fetchQueryNews };
+module.exports = {
+  fetchNews,
+  fetchTrendingNews,
+  fetchQueryNews,
+};
