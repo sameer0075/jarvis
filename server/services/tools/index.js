@@ -1,18 +1,30 @@
-const { fetchWeather } = require("./weather");
-const { fetchNews } = require("./news");
-const { getTime } = require("./time");
-const { listDirectory, openFile, searchFiles } = require("./filesystem");
+const { fetchWeather }  = require("./weather");
+const { fetchNews }     = require("./news");
+const { getTime }       = require("./time");
+const { listDirectory, openFile } = require("./filesystem");
+const { semanticSearch } = require("../filesystem/semantic");
+const { openPath }      = require("./opener");
 
 async function executeTool(tool, args) {
-  console.log("args args",args)
   switch (tool) {
-    case "get_weather": return fetchWeather(args.city);
-    case "get_time":    return getTime(args.city);
-    case "list_dir":      return JSON.stringify(await listDirectory(args.path));
-    case "open_file":     return JSON.stringify(await openFile(args.path));
-    case "search_files":  return JSON.stringify(await searchFiles(args.path, args.query));
-    // case "get_news":    return fetchNews(args.query);
-    default:            return JSON.stringify({ error: `Unknown tool: ${tool}` });
+    case "get_weather":    return fetchWeather(args.city);
+    case "get_time":       return getTime(args.city);
+    case "get_news":       return fetchNews(args.query);
+
+    // Filesystem — all routed through semanticSearch or direct
+    case "list_dir":
+      return JSON.stringify(await listDirectory(args.path));
+
+    case "fs_semantic":
+      // Full intent: query → LLM router → Fuse → result
+      return JSON.stringify(await semanticSearch(args.userQuery));
+
+    case "open_file":
+      // Direct open by exact path (from FileBrowser UI clicks)
+      return JSON.stringify(await openFile(args.path));
+
+    default:
+      return JSON.stringify({ error: `Unknown tool: ${tool}` });
   }
 }
 
@@ -21,7 +33,7 @@ async function executeToolsParallel(intents) {
     intents.map(async ({ tool, args }) => {
       console.log(`[TOOL] Executing: ${tool}`, args);
       const result = await executeTool(tool, args);
-      console.log(`[TOOL] Done: ${tool} → ${String(result).slice(0, 80)}`);
+      console.log(`[TOOL] Done: ${tool} →`, String(result).slice(0, 100));
       return { tool, args, result };
     })
   );
@@ -34,13 +46,13 @@ function buildWidgetData(toolResults) {
       try { widgetData.weather = JSON.parse(result); } catch {}
     }
     if (tool === "get_news") {
-      widgetData.news = result.split("\n").filter(Boolean).map((line) => {
+      widgetData.news = result.split("\n").filter(Boolean).map(line => {
         const m = line.match(/•\s(.+?)\s\((.+?),\s(.+?)\)/);
         return m ? { title: m[1], source: m[2], time: m[3] } : null;
       }).filter(Boolean);
     }
-    if (["list_dir", "search_files", "open_file"].includes(tool)) {
-      try { widgetData.filesystem = { type: tool, ...JSON.parse(result) }; } catch {}
+    if (["list_dir", "fs_semantic", "open_file"].includes(tool)) {
+      try { widgetData.filesystem = JSON.parse(result); } catch {}
     }
   }
   return widgetData;

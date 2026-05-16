@@ -112,12 +112,15 @@ export default function App() {
 
   useEffect(() => {
     if (lastAssistant?.widgetData?.filesystem) {
-      const fs = lastAssistant.widgetData.filesystem;
-      if (fs.type === "list_dir" && fs.ok) {
-        setFileBrowser({ open: true, data: fs });
+      const fsData = lastAssistant.widgetData.filesystem;
+      
+      // Open FileBrowser for any filesystem result that has entries
+      if (fsData.ok && fsData.entries?.length > 0) {
+        setFileBrowser({ open: true, data: fsData });
       }
-      if (fs.type === "open_file") {
-        // File was opened server-side, just show status in chat
+      // find_and_open: file was opened server-side, but still show matches if any
+      if (fsData.type === "find_and_open" && fsData.ok) {
+        // Already opened, no modal needed — JARVIS confirms in chat
       }
     }
   }, [lastAssistant]);

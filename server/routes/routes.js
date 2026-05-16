@@ -7,6 +7,7 @@ const { fetchTrendingNews, fetchQueryNews } = require("../services/tools/news");
 const { fetchWeatherDetails } = require("../services/tools/weather");
 const { getSystemStats } = require("../services/tools/system-info");
 const { listDirectory, openFile, searchFiles } = require("../services/tools/filesystem");
+const { semanticSearch } = require("../services/filesystem/semantic");
 
 const router = Router();
 
@@ -35,7 +36,7 @@ router.post("/clear", (req, res) => {
 
 router.post("/chat", async (req, res) => {
   const { message, sessionId = "default", model } = req.body;
-  if (!message) return res.status(400).json({ error: "message required" });
+    if (!message) return res.status(400).json({ error: "message required" });
 
   const msgs    = getSession(sessionId);
   const userMsg = { role: "user", content: message };
@@ -91,12 +92,22 @@ router.get("/get-system-stats", async (req,res) => {
   }
 })
 
+// Replace the existing /fs/search route:
+router.get("/fs/search", async (req, res) => {
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ error: "query required" });
+  const result = await semanticSearch(query);
+  res.json(result);
+});
+
+// Keep /fs/list as direct (used by FileBrowser UI)
 router.get("/fs/list", async (req, res) => {
   const { path: dirPath = "home" } = req.query;
   const result = await listDirectory(dirPath);
   res.json(result);
 });
 
+// Keep /fs/open as direct (used by FileBrowser double-click)
 router.post("/fs/open", async (req, res) => {
   const { path: filePath } = req.body;
   if (!filePath) return res.status(400).json({ error: "path required" });
@@ -104,10 +115,11 @@ router.post("/fs/open", async (req, res) => {
   res.json(result);
 });
 
-router.get("/fs/search", async (req, res) => {
-  const { path: dirPath = "home", query } = req.query;
+// New: smart open by name
+router.post("/fs/smart-open", async (req, res) => {
+  const { query, searchDir = "home" } = req.body;
   if (!query) return res.status(400).json({ error: "query required" });
-  const result = await searchFiles(dirPath, query);
+  const result = await semanticSearch(`open ${query} in ${searchDir}`);
   res.json(result);
 });
 

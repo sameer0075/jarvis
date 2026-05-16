@@ -38,19 +38,40 @@ function formatSize(bytes) {
   return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 }
 
-function resolvePath(input) {
-  const lower = input.toLowerCase().trim();
+// function resolvePath(input) {
+//   const lower = input.toLowerCase().trim();
 
-  // Match known friendly names
-  for (const [key, p] of Object.entries(KNOWN_DIRS)) {
-    if (lower.includes(key)) return p;
+//   // Match known friendly names
+//   for (const [key, p] of Object.entries(KNOWN_DIRS)) {
+//     if (lower.includes(key)) return p;
+//   }
+
+//   // Absolute path given
+//   if (path.isAbsolute(input)) return input;
+
+//   // Relative to home
+//   return path.join(os.homedir(), input);
+// }
+
+function resolvePath(input = "home") {
+  const home = os.homedir();
+
+  // already absolute path
+  if (path.isAbsolute(input)) {
+    return input;
   }
 
-  // Absolute path given
-  if (path.isAbsolute(input)) return input;
+  const aliases = {
+    home: home,
+    desktop: path.join(home, "Desktop"),
+    downloads: path.join(home, "Downloads"),
+    documents: path.join(home, "Documents"),
+    pictures: path.join(home, "Pictures"),
+    music: path.join(home, "Music"),
+    videos: path.join(home, "Videos"),
+  };
 
-  // Relative to home
-  return path.join(os.homedir(), input);
+  return aliases[input.toLowerCase()] || home;
 }
 
 async function listDirectory(dirPath) {

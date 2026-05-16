@@ -2,10 +2,25 @@ const express  = require("express");
 const cors     = require("cors");
 const http     = require("http");
 const WebSocket = require("ws");
+const mongoose = require("mongoose");
+const dotenv = require('dotenv')
+dotenv.config()
 
 const routes         = require("./routes/routes");
 const { getSession } = require("./utils/session");
 const { runChat }    = require("./services/chat");
+const { buildFilesystemIndex } = require("./services/filesystem/indexer");
+const { startFilesystemWatcher } = require("./services/filesystem/watcher");
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB Connected");
+      (async () => {
+      buildFilesystemIndex()
+          .then(() => startFilesystemWatcher())
+          .catch(e => console.error("[INDEXER] Error:", e.message));
+      })();
+  });
 
 function createServer() {
   const app    = express();
