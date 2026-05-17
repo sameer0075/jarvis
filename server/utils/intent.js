@@ -22,6 +22,38 @@ function isFileSystemIntent(msg) {
   return !isUrl && (fsNouns || (fsVerbs && hasExt) || (fsVerbs && fsNouns));
 }
 
+// function isSystemControlIntent(msg) {
+//   return /\b(open|close|quit|exit|launch|start|switch|minimize|maximize|volume|brightness|type|click|scroll|tab|window|app|application|browser)\b/.test(msg)
+//     || /\b(chrome|edge|firefox|spotify|vscode|terminal|settings|task manager)\b/.test(msg);
+// }
+
+function isSystemControlIntent(msg) {
+  return (
+    // Core actions
+    /\b(open|close|quit|exit|launch|start|switch|minimize|maximize|focus|sleep|lock|shutdown|restart|reboot|screenshot|capture|desktop|mission\s?control|app\s?switcher|mute|unmute|volume|brightness|type|write|input|press|hit|click|scroll|tab|window|app|application|browser)\b/i.test(msg)
+
+    ||
+
+    // Common app names
+    /\b(chrome|safari|firefox|edge|spotify|itunes|music|vscode|visual\s?studio\s?code|terminal|finder|discord|slack|notion|figma|xcode|settings|system\ssettings|task\smanager|activity\smonitor)\b/i.test(msg)
+
+    ||
+
+    // Volume / brightness natural language
+    /\b(louder|quieter|brighter|dimmer|turn\sup\svolume|turn\sdown\svolume|increase\svolume|decrease\svolume|raise\sbrightness|lower\sbrightness)\b/i.test(msg)
+
+    ||
+
+    // Sleep / power variants
+    /\b(power\s?off|turn\s?off|shut\s?down|put\s?(computer|mac|pc|laptop)\s?to\s?sleep|lock\s?(screen|computer|mac))\b/i.test(msg)
+
+    ||
+
+    // Screenshot variants
+    /\b(take\s?a\s?screenshot|capture\s?(screen|display)|screen\s?capture)\b/i.test(msg)
+  );
+}
+
 function extractEntities(message) {
   const msg = message.toLowerCase().trim();
 
@@ -32,9 +64,10 @@ function extractEntities(message) {
 
   const city      = (hasWeather || hasTime) ? extractCity(msg) : null;
   const newsQuery = hasNews ? extractNewsQuery(msg) : null;
+  const hasSystemControl = isSystemControlIntent(msg);
 
-  const entities = { city, newsQuery, hasWeather, hasTime, hasNews, hasFs, rawMessage: message };
-  console.log("[INTENT]", { hasWeather, hasTime, hasNews, hasFs });
+  const entities = { city, newsQuery, hasWeather, hasTime, hasNews, hasFs,hasSystemControl, rawMessage: message };
+  console.log("[INTENT]", { hasWeather, hasTime, hasNews, hasFs, hasSystemControl });
   return entities;
 }
 
@@ -49,6 +82,12 @@ function buildIntents(entities) {
   if (entities.hasFs)
     // Pass the full raw message to the LLM router — it decides search/list/open
     intents.push({ tool: "fs_semantic", args: { userQuery: entities.rawMessage } });
+  if (entities.hasSystemControl) {
+    intents.push({
+      tool: "system_control",
+      args: { userQuery: entities.rawMessage }
+    });
+  }
   return intents;
 }
 

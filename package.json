@@ -10,6 +10,7 @@
     "start": "npm run dev"
   },
   "dependencies": {
+    "active-win": "^8.2.1",
     "chokidar": "^4.0.3",
     "concurrently": "^8.2.0",
     "cors": "^2.8.5",
@@ -18,9 +19,14 @@
     "fuse.js": "^7.3.0",
     "mime-types": "^3.0.2",
     "mongoose": "^8.24.0",
+    "node-geocoder": "^4.4.1",
+    "open": "^10.2.0",
     "os": "^0.1.2",
+    "robotjs": "^0.7.1",
     "rss-parser": "^3.13.0",
     "systeminformation": "^5.31.6",
+    "tz-lookup": "^6.1.25",
+    "util": "^0.12.5",
     "ws": "^8.16.0"
   },
   "devDependencies": {

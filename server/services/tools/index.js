@@ -3,7 +3,7 @@ const { fetchNews }     = require("./news");
 const { getTime }       = require("./time");
 const { listDirectory, openFile } = require("./filesystem");
 const { semanticSearch } = require("../filesystem/semantic");
-const { openPath }      = require("./opener");
+const { systemController } = require("../system/systemController");
 
 async function executeTool(tool, args) {
   switch (tool) {
@@ -22,6 +22,8 @@ async function executeTool(tool, args) {
     case "open_file":
       // Direct open by exact path (from FileBrowser UI clicks)
       return JSON.stringify(await openFile(args.path));
+    case "system_control":
+      return JSON.stringify(await systemController(args.userQuery));
 
     default:
       return JSON.stringify({ error: `Unknown tool: ${tool}` });

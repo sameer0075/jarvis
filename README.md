@@ -33,7 +33,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 ```bash
 # Recommended — Fast & smart (2GB)
-ollama pull llama3.2
+ollama pull qwen3.5:9b
 
 # Smaller, faster (1.3GB)
 ollama pull llama3.2:1b

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
 const LANGUAGE_CONFIG = {
-  "en": { stt: "en-US", tts: ["Google UK English Female", "Microsoft Zira", "Samantha", "Victoria", "Karen","Female"] },
+  "en": { stt: "en-US", tts: ["Microsoft Zira", "Samantha", "Victoria", "Karen","Female"] },
   "ur": { stt: "ur-PK", tts: ["Urdu", "Pakistan", "Hindi"] },
   "hi": { stt: "hi-IN", tts: ["Hindi", "India"] },
   "ar": { stt: "ar-SA", tts: ["Arabic"] },
