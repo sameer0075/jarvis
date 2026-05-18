@@ -34,6 +34,7 @@ async function routeFileIntent(userMessage) {
       stream:  false,
       format:  "json",
       options: { temperature: 0, num_predict: 150 },
+      think: false
     });
 
     const raw = (data.message?.content || "").trim();

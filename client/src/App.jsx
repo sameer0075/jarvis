@@ -333,7 +333,7 @@ export default function App() {
           {/* Top accent line */}
           <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--arc-primary), transparent)", opacity: 0.3 }} />
 
-          <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", padding: "14px 24px" }}>
+          {/* <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", padding: "14px 24px" }}>
             <span style={{
               color: "var(--arc-primary)",
               fontFamily: "var(--font-mono)",
@@ -392,7 +392,75 @@ export default function App() {
                 EXECUTE
               </button>
             </div>
-          </div>
+          </div> */}
+
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", padding: "14px 24px" }}>
+  
+  <span style={{
+    color: "var(--arc-primary)",
+    fontFamily: "var(--font-mono)",
+    fontSize: "16px",
+    paddingBottom: "10px",
+    textShadow: "0 0 10px var(--arc-primary)",
+    flexShrink: 0,
+  }}>❯</span>
+ 
+  <textarea
+    ref={inputRef}
+    value={input}
+    onChange={(e) => setInput(e.target.value)}
+    onKeyDown={handleKeyDown}
+    placeholder={isListening ? "Listening..." : handsFreeActive ? "Hands-free active. Speak or type command..." : "Enter command..."}
+    rows={1}
+    style={{
+      flex: isSpeaking ? "0 0 0" : 1,          // ← collapse when speaking
+      maxWidth: isSpeaking ? "0" : "none",       // ← hide when speaking
+      overflow: "hidden",
+      background: "transparent",
+      border: "none",
+      color: "var(--text-primary)",
+      fontFamily: "var(--font-mono)",
+      fontSize: "14px",
+      padding: isSpeaking ? "0" : "8px 0",
+      outline: "none",
+      resize: "none",
+      lineHeight: 1.6,
+      caretColor: "var(--arc-primary)",
+      transition: "all 0.3s ease",
+    }}
+    disabled={isListening || isSpeaking}
+  />
+ 
+  <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingBottom: "4px", flex: isSpeaking ? 1 : "none", minWidth: 0 }}>
+    <VoiceButton
+      isListening={isListening} isSpeaking={isSpeaking}
+      transcript={transcript} onStart={startListening}
+      onStop={stopListening} onStopSpeaking={stopSpeaking} supported={supported}
+    />
+    {!isSpeaking && (
+      <button
+        onClick={() => handleSend()}
+        disabled={!input.trim() || isThinking}
+        style={{
+          background: input.trim() && !isThinking ? "rgba(0,212,255,0.12)" : "transparent",
+          border: `1px solid ${input.trim() && !isThinking ? "var(--arc-primary)" : "var(--border)"}`,
+          borderRadius: "2px",
+          color: input.trim() && !isThinking ? "var(--arc-primary)" : "var(--text-dim)",
+          cursor: input.trim() && !isThinking ? "pointer" : "not-allowed",
+          padding: "7px 14px",
+          display: "flex", alignItems: "center", gap: "6px",
+          fontFamily: "var(--font-mono)", fontSize: "10px",
+          letterSpacing: "0.15em", transition: "all 0.2s",
+        }}
+      >
+        {isThinking ? (
+          <div style={{ width: 12, height: 12, border: "2px solid var(--arc-dim)", borderTopColor: "var(--arc-primary)", borderRadius: "50%", animation: "rotate 0.8s linear infinite" }} />
+        ) : <Send size={12} />}
+        EXECUTE
+      </button>
+    )}
+  </div>
+</div>
         </div>
         </div>
         <JarvisWidgets weatherData={weatherState} newsData={newsState} statsData={stats} />
