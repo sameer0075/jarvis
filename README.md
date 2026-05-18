@@ -33,7 +33,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 ```bash
 # Recommended — Fast & smart (2GB)
-ollama pull qwen3.5:9b
+ollama pull qwen3.5:9b => Currently Used
 
 # Smaller, faster (1.3GB)
 ollama pull llama3.2:1b
@@ -142,34 +142,6 @@ Jarvis will open a split browser panel inside the app!
 
 ---
 
-## 🏗️ Project Structure
-
-```
-jarvis/
-├── server/
-│   └── index.js          # Express + WebSocket server
-├── client/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ArcReactor.jsx    # Animated logo
-│   │   │   ├── BrowserPanel.jsx  # Inline browser
-│   │   │   ├── ChatMessage.jsx   # Message bubbles
-│   │   │   ├── StatusBar.jsx     # Ollama status
-│   │   │   └── VoiceButton.jsx   # Mic control
-│   │   ├── hooks/
-│   │   │   ├── useJarvis.js      # Chat + WebSocket logic
-│   │   │   └── useVoice.js       # Speech recognition + synthesis
-│   │   ├── App.jsx               # Main layout
-│   │   ├── main.jsx              # React entry
-│   │   └── index.css             # Global styles
-│   ├── index.html
-│   ├── vite.config.js
-│   └── package.json
-└── package.json                  # Root scripts
-```
-
----
-
 ## 🔧 Troubleshooting
 
 **Ollama offline?**
@@ -205,3 +177,51 @@ Jarvis parses special action tags from the AI response:
 - `[ACTION:SEARCH:query]` → Google search in browser panel
 
 The system prompt instructs the model to emit these when relevant.
+
+## 📡 Shows Latest News and Weather Details
+
+## 🧠 Currently Tested on Mac Only
+- System Control
+    - minimize_window      → TODO
+    - maximize_window      → TODO
+    - force_quit           
+
+    - next_track           → NOT TESTED
+    - previous_track       → NOT TESTED
+    - play_pause           → NOT TESTED
+
+    - wifi_on              
+    - wifi_off             
+    - bluetooth_on         
+    - bluetooth_off        
+
+    - clipboard_copy       
+    - clipboard_paste      
+
+    - new_tab              
+    - close_tab            
+    - new_window           
+    - close_window         
+
+    - zoom_in              
+    - zoom_out             
+
+    - search_google        
+    - search_youtube       TODO
+
+    - open_folder          
+
+    - get_battery          
+    - get_volume           
+    - get_brightness       TODO
+
+    - microphone_mute      
+    - microphone_unmute    
+
+    - lock_screen
+
+    - take_screenshot
+    - record_screen
+    - stop_recording
+- FileSystem
+    - Search and Display Parent Level Files & Folders.

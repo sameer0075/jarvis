@@ -30,17 +30,17 @@ function isFileSystemIntent(msg) {
 function isSystemControlIntent(msg) {
   return (
     // Core actions
-    /\b(open|close|quit|exit|launch|start|switch|minimize|maximize|focus|sleep|lock|shutdown|restart|reboot|screenshot|capture|desktop|mission\s?control|app\s?switcher|mute|unmute|volume|brightness|type|write|input|press|hit|click|scroll|tab|window|app|application|browser)\b/i.test(msg)
+    /\b(open|close|quit|exit|launch|start|switch|minimize|maximize|focus|sleep|lock|shutdown|restart|reboot|screenshot|capture|desktop|mission\s?control|app\s?switcher|mute|unmute|volume|brightness|type|write|input|press|hit|click|scroll|tab|window|app|application|browser|hide|force\s?quit|trash|recycle\s?bin|wifi|bluetooth|clipboard|copy|paste|zoom|record|screen\s?recording|microphone|battery|dark\s?mode|light\s?mode|keyboard\s?brightness)\b/i.test(msg)
 
     ||
 
     // Common app names
-    /\b(chrome|safari|firefox|edge|spotify|itunes|music|vscode|visual\s?studio\s?code|terminal|finder|discord|slack|notion|figma|xcode|settings|system\ssettings|task\smanager|activity\smonitor)\b/i.test(msg)
+    /\b(chrome|safari|firefox|edge|spotify|itunes|music|vscode|visual\s?studio\s?code|terminal|finder|discord|slack|notion|figma|xcode|settings|system\s?settings|task\s?manager|activity\s?monitor)\b/i.test(msg)
 
     ||
 
     // Volume / brightness natural language
-    /\b(louder|quieter|brighter|dimmer|turn\sup\svolume|turn\sdown\svolume|increase\svolume|decrease\svolume|raise\sbrightness|lower\sbrightness)\b/i.test(msg)
+    /\b(louder|quieter|brighter|dimmer|turn\s?up\s?volume|turn\s?down\s?volume|increase\s?volume|decrease\s?volume|raise\s?brightness|lower\s?brightness)\b/i.test(msg)
 
     ||
 
@@ -51,6 +51,41 @@ function isSystemControlIntent(msg) {
 
     // Screenshot variants
     /\b(take\s?a\s?screenshot|capture\s?(screen|display)|screen\s?capture)\b/i.test(msg)
+
+    ||
+
+    // Browser / tabs / windows
+    /\b(new\s?tab|close\s?tab|new\s?window|close\s?window|switch\s?tab)\b/i.test(msg)
+
+    ||
+
+    // Media controls
+    /\b(play\s?music|pause\s?music|next\s?song|previous\s?song|next\s?track|previous\s?track)\b/i.test(msg)
+
+    ||
+
+    // Search commands
+    /\b(search\s?google|google\s?.*|youtube\s?search|search\s?youtube)\b/i.test(msg)
+
+    ||
+
+    // Connectivity
+    /\b(turn\s?on\s?wifi|turn\s?off\s?wifi|wifi\s?on|wifi\s?off|bluetooth\s?on|bluetooth\s?off)\b/i.test(msg)
+
+    ||
+
+    // Clipboard commands
+    /\b(copy\s?this|copy\s?text|paste\s?this|clear\s?clipboard)\b/i.test(msg)
+
+    ||
+
+    // UI appearance
+    /\b(enable\s?dark\s?mode|disable\s?dark\s?mode|light\s?mode|dark\s?theme)\b/i.test(msg)
+
+    ||
+
+    // Screen recording
+    /\b(record\s?screen|start\s?recording|stop\s?recording)\b/i.test(msg)
   );
 }
 

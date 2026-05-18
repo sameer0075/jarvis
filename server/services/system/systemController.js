@@ -6,35 +6,59 @@ const {
   setBrightness,
   adjustVolume,
   adjustBrightness,
+  getCurrentVolume,
+  getCurrentBrightness,
 } = require("./systemDrivers");
-const { platform } = require("os");
 const os = require("os");
-
 async function systemController(userQuery) {
   const prompt = `
 You are a system control parser. Convert user request into JSON actions ONLY. No explanation.
 
 Allowed actions and their value field:
-- set_volume        → value: 0-100 (exact percentage)
-- volume_up         → value: amount to increase (default 10)
-- volume_down       → value: amount to decrease (default 10)
-- set_brightness    → value: 0-100 (exact percentage)
-- brightness_up     → value: amount to increase (default 10)
-- brightness_down   → value: amount to decrease (default 10)
-- open_app          → target: app name (e.g. "Safari", "Spotify", "Calculator")
-- close_app         → target: app name
-- sleep             → put computer to sleep (no value needed)
-- lock_screen       → lock the screen (no value needed)
-- shutdown          → shut down the computer (no value needed)
-- restart           → restart the computer (no value needed)
-- show_desktop      → hide all windows and show desktop (no value needed)
-- screenshot        → take a screenshot (no value needed)
-- app_switcher      → open the app switcher / show all open apps (no value needed)
-- mute              → mute audio (no value needed)
-- unmute            → unmute audio (no value needed)
-- type_text         → value: text to type
-- press_key         → value: key name
-- open_url          → target: full URL
+- minimize_window      → minimize current window
+- maximize_window      → maximize current window
+- force_quit           → target: app name
+
+- next_track           → next media track
+- previous_track       → previous media track
+- play_pause           → toggle media playback
+
+- wifi_on              → turn wifi on
+- wifi_off             → turn wifi off
+- bluetooth_on         → turn bluetooth on
+- bluetooth_off        → turn bluetooth off
+
+- clipboard_copy       → value: text
+- clipboard_paste      → paste clipboard
+
+- new_tab              → open new tab
+- close_tab            → close current tab
+- new_window           → open new window
+- close_window         → close current window
+
+- zoom_in              → zoom in current app
+- zoom_out             → zoom out current app
+
+- search_google        → value: query
+- search_youtube       → value: query
+
+- open_folder          → target: folder path or name
+
+- get_battery          → get battery percentage
+- get_volume           → get current volume
+- get_brightness       → get current brightness
+
+- microphone_mute      → mute microphone
+- microphone_unmute    → unmute microphone
+
+- empty_clipboard
+
+- sleep_display
+- lock_screen
+
+- take_region_screenshot
+- record_screen
+- stop_recording
 
 Return ONLY valid JSON, no markdown, no explanation:
 {
@@ -90,6 +114,7 @@ User request: ${userQuery}
 async function executeAction(action) {
   console.log("[SYSCTL] Executing platform:", action, os.platform());
   const val = Number(action.value) || 0;
+  const clipboardy = (await import("clipboardy")).default;
 
   switch (action.type) {
     // ── Volume ──────────────────────────────────────────────────────────────
@@ -103,9 +128,11 @@ async function executeAction(action) {
       return adjustVolume("down", val || 10);
 
     case "mute":
+    case "microphone_mute":
       return adjustVolume("down", val || 0);
 
     case "unmute":
+    case "microphone_unmute":
       return adjustVolume("up", val || 100);
 
     // ── Brightness ──────────────────────────────────────────────────────────
@@ -178,6 +205,7 @@ async function executeAction(action) {
       return "Switched tab";
 
     case "sleep":
+    case "sleep_display":
       if (os.platform() === "darwin") {
         exec(`pmset displaysleepnow`);
       } else if (os.platform() === "win32") {
@@ -256,6 +284,7 @@ async function executeAction(action) {
       return "Opening app switcher";
 
     case "screenshot":
+    case "take_region_screenshot":
       if (os.platform() === "darwin") {
         const path = `${os.homedir()}/Desktop/screenshot_${Date.now()}.png`;
 
@@ -276,6 +305,210 @@ async function executeAction(action) {
 
       return "Screenshot taken";
 
+    case "play_pause":
+      robot.keyTap("audio_play");
+      return "Toggled playback";
+
+    case "next_track":
+      robot.keyTap("audio_next");
+      return "Next track";
+
+    case "previous_track":
+      robot.keyTap("audio_prev");
+      return "Previous track";
+
+    case "minimize_window":
+      if (os.platform() === "darwin") {
+        exec(`
+            osascript -e '
+            tell application "System Events"
+              tell (first application process whose frontmost is true)
+                try
+                  click button 3 of front window
+                end try
+              end tell
+            end tell'
+          `);
+      } else if (os.platform() === "win32") {
+        robot.keyTap("down", ["command"]);
+      }
+
+      return "Window minimized";
+
+    case "close_window":
+      robot.keyTap("w", ["command"]);
+      return "Window closed";
+
+    case "new_tab":
+      robot.keyTap("t", ["command"]);
+      return "New tab opened";
+
+    case "close_tab":
+      robot.keyTap("w", ["command"]);
+      return "Tab closed";
+
+    case "clipboard_copy":
+      await clipboardy.write(action.value);
+      return "Copied to clipboard";
+
+    case "clipboard_paste":
+      robot.keyTap("v", ["command"]);
+      return "Pasted clipboard";
+
+    case "empty_clipboard":
+      await clipboardy.write("");
+      return "Clipboard cleared";
+
+    case "search_google": {
+      const open = (await import("open")).default;
+      const q = encodeURIComponent(action.value);
+      await open(`https://www.google.com/search?q=${q}`);
+      return `Searching Google for ${action.value}`;
+    }
+
+    case "search_youtube": {
+      const open = (await import("open")).default;
+
+      const query = String(action.value || "").trim();
+
+      if (!query) {
+        return "No YouTube search query provided";
+      }
+
+      const q = encodeURIComponent(query);
+
+      await open(`https://www.youtube.com/results?search_query=${q}`);
+
+      return `Searching YouTube for ${query}`;
+    }
+
+    case "open_folder":
+      if (os.platform() === "darwin") {
+        exec(`open "${action.target}"`);
+      }
+      return `Opened folder ${action.target}`;
+
+    case "get_battery":
+      if (os.platform() === "darwin") {
+        exec(`pmset -g batt`);
+      }
+      return "Fetching battery info";
+
+    case "maximize_window":
+      if (os.platform() === "darwin") {
+        exec(`
+              osascript -e '
+              tell application "System Events"
+                tell (first application process whose frontmost is true)
+                  click (first button of first window whose subrole is "AXZoomButton")
+                end tell
+              end tell'
+            `);
+      } else if (os.platform() === "win32") {
+        robot.keyTap("up", ["command"]);
+      } else {
+        exec(`wmctrl -r :ACTIVE: -b add,maximized_vert,maximized_horz`);
+      }
+
+      return "Window maximized";
+
+    case "force_quit":
+      if (os.platform() === "darwin") {
+        exec(`osascript -e 'tell application "${action.target}" to quit'`);
+
+        setTimeout(() => {
+          exec(`pkill -9 "${action.target}"`);
+        }, 2000);
+      } else if (os.platform() === "win32") {
+        exec(`taskkill /IM "${action.target}.exe" /F`);
+      }
+
+      return `Force quit ${action.target}`;
+
+    case "new_window":
+      if (os.platform() === "darwin") {
+        robot.keyTap("n", ["command"]);
+      } else if (os.platform() === "win32") {
+        robot.keyTap("n", ["control"]);
+      } else {
+        robot.keyTap("n", ["control"]);
+      }
+
+      return "New window opened";
+
+    case "zoom_in":
+      if (os.platform() === "darwin") {
+        robot.keyTap("=", ["command"]);
+      } else {
+        robot.keyTap("=", ["control"]);
+      }
+
+      return "Zoomed in";
+
+    case "zoom_out":
+      if (os.platform() === "darwin") {
+        robot.keyTap("-", ["command"]);
+      } else {
+        robot.keyTap("-", ["control"]);
+      }
+
+      return "Zoomed out";
+
+    case "get_volume": {
+      const current = await getCurrentVolume();
+
+      if (current === null) {
+        return "Could not get current volume";
+      }
+
+      return `Current volume is ${current}%`;
+    }
+
+    case "get_brightness": {
+      const current = await getCurrentBrightness();
+
+      if (current === null) {
+        return "Could not get current brightness";
+      }
+
+      return `Current brightness is ${current}%`;
+    }
+
+    case "wifi_off":
+      exec(`networksetup -setairportpower en0 off`);
+      return "WiFi turned off";
+
+    case "wifi_on":
+      exec(`networksetup -setairportpower en0 on`);
+      return "WiFi turned on";
+
+    case "bluetooth_off":
+      exec(`blueutil --power 0`);
+      return "Bluetooth off";
+
+    case "bluetooth_on":
+      exec(`blueutil --power 1`);
+      return "Bluetooth on";
+
+    case "record_screen":
+      if (os.platform() === "darwin") {
+        robot.keyTap("5", ["command", "shift"]);
+      }
+
+      return "Screen recorder opened";
+
+    case "stop_recording":
+      if (os.platform() === "darwin") {
+        exec(`
+                      osascript -e '
+                      tell application "System Events"
+                        keystroke "." using {command down, control down}
+                      end tell'
+                    `);
+      }
+
+      return "Stopped recording";
+
     default:
       console.log("[SYSCTL] Unknown action:", action.type);
       return `Unknown action: ${action.type}`;
@@ -283,3 +516,10 @@ async function executeAction(action) {
 }
 
 module.exports = { systemController };
+
+/* 
+  TODO-FIXES
+  - minimize_window      → minimize current window
+  - maximize_window      → maximize current window
+  - search_youtube → value: query
+*/
