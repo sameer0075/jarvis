@@ -22,11 +22,6 @@ function isFileSystemIntent(msg) {
   return !isUrl && (fsNouns || (fsVerbs && hasExt) || (fsVerbs && fsNouns));
 }
 
-// function isSystemControlIntent(msg) {
-//   return /\b(open|close|quit|exit|launch|start|switch|minimize|maximize|volume|brightness|type|click|scroll|tab|window|app|application|browser)\b/.test(msg)
-//     || /\b(chrome|edge|firefox|spotify|vscode|terminal|settings|task manager)\b/.test(msg);
-// }
-
 function isSystemControlIntent(msg) {
   return (
     // Core actions

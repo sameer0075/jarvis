@@ -11,16 +11,19 @@ const { getSession } = require("./utils/session");
 const { runChat }    = require("./services/chat");
 const { buildFilesystemIndex } = require("./services/filesystem/indexer");
 const { startFilesystemWatcher } = require("./services/filesystem/watcher");
+const { analyzeLoop } = require("./services/vision/observer");
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connected");
-      (async () => {
-      buildFilesystemIndex()
-          .then(() => startFilesystemWatcher())
-          .catch(e => console.error("[INDEXER] Error:", e.message));
-      })();
+      // (async () => {
+      // buildFilesystemIndex()
+      //     .then(() => startFilesystemWatcher())
+      //     .catch(e => console.error("[INDEXER] Error:", e.message));
+      // })();
   });
+
+  analyzeLoop();
 
 function createServer() {
   const app    = express();

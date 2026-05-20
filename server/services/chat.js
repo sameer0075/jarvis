@@ -2,11 +2,12 @@ const ollama = require("./ollama");
 const { extractEntities, buildIntents } = require("../utils/intent");
 const { executeToolsParallel, buildWidgetData } = require("./tools");
 const { DEFAULT_MODEL, LLM_OPTIONS } = require("../utils/config");
+const state = require("./vision/state");
 
 function parseActions(text) {
   const actions = [];
   let m;
-  const urlRe    = /\[ACTION:OPEN_URL:([^\]]+)\]/gi;
+  const urlRe = /\[ACTION:OPEN_URL:([^\]]+)\]/gi;
   const searchRe = /\[ACTION:SEARCH:([^\]]+)\]/gi;
 
   while ((m = urlRe.exec(text))) {
@@ -35,12 +36,17 @@ function buildEnrichedMessage(originalMessage, toolResults) {
 function buildMessages(messages, lastUser, toolResults) {
   const MAX_HISTORY = 6;
   const systemMsg = messages.find((m) => m.role === "system");
-  const recent = messages.filter((m) => m.role !== "system").slice(-MAX_HISTORY);
+  const recent = messages
+    .filter((m) => m.role !== "system")
+    .slice(-MAX_HISTORY);
   const trimmed = systemMsg ? [systemMsg, ...recent] : recent;
 
   return trimmed.map((msg) => {
     if (msg === lastUser && toolResults.length > 0) {
-      return { ...msg, content: buildEnrichedMessage(msg.content, toolResults) };
+      return {
+        ...msg,
+        content: buildEnrichedMessage(msg.content, toolResults),
+      };
     }
     return msg;
   });
@@ -48,29 +54,57 @@ function buildMessages(messages, lastUser, toolResults) {
 
 async function runChat(messages, model, stream = false, onChunk = null) {
   const modelName = model || DEFAULT_MODEL;
-  const lastUser  = messages.findLast((m) => m.role === "user");
-  const userText  = lastUser?.content || "";
+  const lastUser = messages.findLast((m) => m.role === "user");
+  const userText = lastUser?.content || "";
 
   // 1. Extract intents (instant, regex-based)
   const entities = extractEntities(userText);
-  const intents  = buildIntents(entities);
+  const intents = buildIntents(entities);
 
   // 2. Fetch tools in parallel
   let toolResults = [];
-  let widgetData  = null;
+  let widgetData = null;
 
   if (intents.length > 0) {
     const t0 = Date.now();
     toolResults = await executeToolsParallel(intents);
-    widgetData  = buildWidgetData(toolResults);
+    widgetData = buildWidgetData(toolResults);
     console.log(`[TOOLS] fetched in ${Date.now() - t0}ms`);
   }
 
   // 3. Build enriched message history
   const enrichedMessages = buildMessages(messages, lastUser, toolResults);
+  const visionContext = `
+    ACTIVE APP:
+    ${state.activeWindow?.owner?.name || "Unknown"}
+
+    WINDOW TITLE:
+    ${state.activeWindow?.title || "Unknown"}
+
+    VISIBLE SCREEN OCR:
+    ${(state.lastOCR || "").slice(0, 4000)}
+    `;
+
+  const finalMessages = enrichedMessages.map((msg, index) => {
+    // inject only into latest user message
+    if (msg.role === "user" && index === enrichedMessages.length - 1) {
+      return {
+        ...msg,
+        content: `
+${msg.content}
+
+<screen_context>
+${visionContext}
+</screen_context>
+`,
+      };
+    }
+
+    return msg;
+  });
   const ollamaBody = {
     model: modelName,
-    messages: enrichedMessages,
+    messages: finalMessages,
     think: false,
     options: LLM_OPTIONS,
   };
@@ -85,7 +119,7 @@ async function runChat(messages, model, stream = false, onChunk = null) {
           const { cleanText, actions } = parseActions(fullText);
           resolve({ text: cleanText, raw: fullText, actions, widgetData });
         },
-        reject
+        reject,
       );
     });
   }
