@@ -33,9 +33,7 @@ async function executeTool(tool, args) {
 async function executeToolsParallel(intents) {
   return Promise.all(
     intents.map(async ({ tool, args }) => {
-      console.log(`[TOOL] Executing: ${tool}`, args);
       const result = await executeTool(tool, args);
-      console.log(`[TOOL] Done: ${tool} →`, String(result).slice(0, 100));
       return { tool, args, result };
     })
   );

@@ -79,7 +79,6 @@ Examples:
 User request: ${userQuery}
 `;
 
-  console.log("[SYSCTL] Parsing:", userQuery);
   const res = await ollama.post({
     model: "qwen3.5:9b",
     messages: [{ role: "user", content: prompt }],
@@ -98,12 +97,9 @@ User request: ${userQuery}
     if (!jsonMatch) throw new Error("No JSON found");
     parsed = JSON.parse(jsonMatch[0]);
   } catch (e) {
-    console.log("[SYSCTL] RAW:", res.message.content);
-    console.log("[SYSCTL] Parse error:", e.message);
     return { error: "Invalid system control response" };
   }
 
-  console.log("[SYSCTL] Parsed:", JSON.stringify(parsed));
   const results = [];
   for (const action of parsed.actions || []) {
     results.push(await executeAction(action));
@@ -112,7 +108,6 @@ User request: ${userQuery}
 }
 
 async function executeAction(action) {
-  console.log("[SYSCTL] Executing platform:", action, os.platform());
   const val = Number(action.value) || 0;
   const clipboardy = (await import("clipboardy")).default;
 
@@ -217,7 +212,6 @@ async function executeAction(action) {
 
     case "lock_screen":
       if (os.platform() === "darwin") {
-        console.log("sleep test");
         const { spawn } = require("child_process");
 
         spawn("pmset", ["displaysleepnow"], {
@@ -290,9 +284,7 @@ async function executeAction(action) {
 
         exec(`screencapture "${path}"`, (err) => {
           if (err) {
-            console.error("[SCREENSHOT ERROR]", err);
           } else {
-            console.log("[SCREENSHOT SAVED]", path);
           }
         });
       } else if (os.platform() === "win32") {
@@ -510,7 +502,6 @@ async function executeAction(action) {
       return "Stopped recording";
 
     default:
-      console.log("[SYSCTL] Unknown action:", action.type);
       return `Unknown action: ${action.type}`;
   }
 }

@@ -126,7 +126,6 @@ async function openFile(filePath) {
               : process.platform === "darwin" ? `open "${filePath}"`
               : `xdg-open "${filePath}"`;
 
-    console.log(`[FS] Opening: ${cmd}`);
     exec(cmd, (err) => {
       if (err) resolve({ ok: false, error: err.message });
       else     resolve({ ok: true, path: filePath });

@@ -33,7 +33,6 @@ async function getCurrentVolume() {
       );
       const val = parseInt(stdout.trim());
       if (!isNaN(val)) {
-        console.log(`[VOLUME] Current: ${val}%`);
         return val;
       }
     } else if (process.platform === "win32") {
@@ -49,7 +48,6 @@ async function getCurrentVolume() {
       if (match) return parseInt(match[1]);
     }
   } catch (e) {
-    console.log("[VOLUME] Could not read current volume:", e.message);
   }
   return null;
 }
@@ -57,16 +55,13 @@ async function getCurrentVolume() {
 // Set volume to exact percentage
 async function setVolume(level) {
   const clamped = Math.max(0, Math.min(100, level));
-  console.log(`[VOLUME] Target: ${clamped}%`);
 
   if (process.platform === "darwin") {
     // macOS: osascript can set exact volume directly — no key tapping needed
     try {
       await execAsync(`osascript -e "set volume output volume ${clamped}"`);
-      console.log(`[VOLUME] Set via osascript to ${clamped}%`);
       return `Volume set to ${clamped}%`;
     } catch (e) {
-      console.log("[VOLUME] osascript failed:", e.message);
     }
   } else if (process.platform === "win32") {
     // Windows: nircmd (if installed) or PowerShell
@@ -120,8 +115,6 @@ async function setVolumeViaKeys(targetPct, currentPct) {
   const diff = targetPct - currentPct;
   const taps = Math.max(1, Math.round(Math.abs(diff) / PCT_PER_TAP));
   const key = diff > 0 ? "audio_vol_up" : "audio_vol_down";
-
-  console.log(`[VOLUME] Keys: ${diff > 0 ? "UP" : "DOWN"} ${taps} taps`);
 
   if (process.platform === "darwin") {
     const keyCode = diff > 0 ? 0 : 1; // F12=up F11=down on some layouts
@@ -198,7 +191,6 @@ async function getCurrentBrightnessIoreg() {
             : raw <= 100
               ? Math.round(raw)
               : Math.round((raw / 1024) * 100);
-        console.log(`[BRIGHTNESS] ioreg (${cls}): raw=${raw} → ${pct}%`);
         return pct;
       }
     } catch (_) {}
@@ -214,7 +206,6 @@ async function getCurrentBrightness() {
     const val = parseFloat(stdout.trim());
     if (!isNaN(val) && val >= 0 && val <= 1) {
       const pct = Math.round(val * 100);
-      console.log(`[BRIGHTNESS] Read ControlCenter slider: ${pct}%`);
       return pct;
     }
   } catch (_) {}
@@ -222,7 +213,6 @@ async function getCurrentBrightness() {
   const ioPct = await getCurrentBrightnessIoreg();
   if (ioPct !== null) return ioPct;
 
-  console.log("[BRIGHTNESS] Could not read current brightness");
   return null;
 }
 
@@ -230,11 +220,9 @@ async function detectBrightnessSteps() {
   try {
     const { stdout } = await execAsync("uname -m");
     if (stdout.trim() === "arm64") {
-      console.log("[BRIGHTNESS] M-series → 32 steps");
       return 32;
     }
   } catch (_) {}
-  console.log("[BRIGHTNESS] Intel → 16 steps");
   return 16;
 }
 
@@ -251,8 +239,6 @@ async function sendBrightnessKeys(keyCode, steps) {
 
 async function setBrightness(level) {
   const clamped = Math.max(0, Math.min(100, level));
-  console.log(`[BRIGHTNESS] Target: ${clamped}%`);
-
   if (process.platform !== "darwin") {
     if (process.platform === "win32") {
       exec(
@@ -281,15 +267,11 @@ async function setBrightness(level) {
     const steps = Math.round(Math.abs(diff) / pctPerStep);
     if (steps === 0) return `Brightness already at ${current}%`;
     const keyCode = diff > 0 ? 144 : 145;
-    console.log(
-      `[BRIGHTNESS] Delta: ${diff > 0 ? "UP" : "DOWN"} ${steps} steps from ${current}% → ${clamped}%`,
-    );
     await sendBrightnessKeys(keyCode, steps);
     return `Brightness set to ~${clamped}% (was ${current}%)`;
   }
 
   // Absolute reset fallback
-  console.log("[BRIGHTNESS] Absolute reset fallback");
   const targetSteps = Math.round((clamped / 100) * totalSteps);
   await sendBrightnessKeys(145, totalSteps + 5);
   await new Promise((r) => setTimeout(r, 300));

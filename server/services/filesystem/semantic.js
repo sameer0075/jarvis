@@ -6,8 +6,6 @@ const { openPath } = require("../tools/opener");
 async function semanticSearch(userQuery) {
   // Step 1: LLM routes the intent
   const route = await routeFileIntent(userQuery);
-  console.log("[SEMANTIC] Route:", route);
-  console.log("route",route)
 
   if (!route) {
     // Fallback: plain fuzzy search across home
@@ -16,13 +14,11 @@ async function semanticSearch(userQuery) {
   }
 
   const { tool, args } = route;
-  console.log("tooltool",tool)
 
   // Step 2: Execute the routed tool
   switch (tool) {
     case "list_dir": {
       const result = await listDirectory(args.path || "home");
-      console.log("resultlist_dir",result)
 
       return { ok: result.ok, type: "list_dir", path: result.path, entries: result.entries, error: result.error };
     }
@@ -32,7 +28,6 @@ async function semanticSearch(userQuery) {
         query:     args.query || userQuery,
         searchDir: args.searchDir || "home",
       });
-      console.log("resultsearch_files",result)
       return formatSearchResult(result);
     }
 
@@ -41,7 +36,6 @@ async function semanticSearch(userQuery) {
       if (!best) {
         return { ok: false, type: "find_and_open", error: `No file matching "${args.query}" found` };
       }
-      console.log("bestfind_and_open",best)
       try {
         await openPath(best.path);
         return {

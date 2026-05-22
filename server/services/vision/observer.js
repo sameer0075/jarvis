@@ -41,15 +41,11 @@ async function analyzeLoop() {
 
       // 4. only OCR when needed
       if (screenChanged || windowChanged) {
-        console.log("[VISION] Change detected");
 
         const ocrText = await runOCR(buffer);
 
         state.lastOCR = ocrText;
         state.lastUpdate = Date.now();
-
-        console.log("[VISION] OCR updated");
-        console.log(ocrText.slice(0, 500));
       }
 
       // sleep

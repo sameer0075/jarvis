@@ -1,34 +1,33 @@
-const express  = require("express");
-const cors     = require("cors");
-const http     = require("http");
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
 const WebSocket = require("ws");
 const mongoose = require("mongoose");
-const dotenv = require('dotenv')
-dotenv.config()
+const dotenv = require("dotenv");
+dotenv.config();
 
-const routes         = require("./routes/routes");
+const routes = require("./routes/routes");
 const { getSession } = require("./utils/session");
-const { runChat }    = require("./services/chat");
+const { runChat } = require("./services/chat");
 const { buildFilesystemIndex } = require("./services/filesystem/indexer");
 const { startFilesystemWatcher } = require("./services/filesystem/watcher");
 const { analyzeLoop } = require("./services/vision/observer");
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB Connected");
-      // (async () => {
-      // buildFilesystemIndex()
-      //     .then(() => startFilesystemWatcher())
-      //     .catch(e => console.error("[INDEXER] Error:", e.message));
-      // })();
-  });
+mongoose.connect(process.env.MONGO_URI).then(() => {
+  console.log("MongoDB Connected");
+  // (async () => {
+  // buildFilesystemIndex()
+  //     .then(() => startFilesystemWatcher())
+  //     .catch(e => console.error("[INDEXER] Error:", e.message));
+  // })();
+});
 
-  analyzeLoop();
+analyzeLoop();
 
 function createServer() {
-  const app    = express();
+  const app = express();
   const server = http.createServer(app);
-  const wss    = new WebSocket.Server({ server, path: "/api/chat/stream" });
+  const wss = new WebSocket.Server({ server, path: "/api/chat/stream" });
 
   app.use(cors({ origin: "*" }));
   app.use(express.json({ limit: "50mb" }));
@@ -37,17 +36,27 @@ function createServer() {
   // ── WebSocket ──────────────────────────────────────────────────────────────
   wss.on("connection", (ws) => {
     ws.isAlive = true;
-    ws.on("pong", () => { ws.isAlive = true; });
+    ws.on("pong", () => {
+      ws.isAlive = true;
+    });
 
     ws.on("message", async (raw) => {
       let payload;
-      try { payload = JSON.parse(raw.toString()); }
-      catch { return ws.send(JSON.stringify({ type: "error", error: "Invalid JSON" })); }
+      try {
+        payload = JSON.parse(raw.toString());
+      } catch {
+        return ws.send(
+          JSON.stringify({ type: "error", error: "Invalid JSON" }),
+        );
+      }
 
       const { message, sessionId = "default", model } = payload;
-      if (!message) return ws.send(JSON.stringify({ type: "error", error: "message required" }));
+      if (!message)
+        return ws.send(
+          JSON.stringify({ type: "error", error: "message required" }),
+        );
 
-      const msgs    = getSession(sessionId);
+      const msgs = getSession(sessionId);
       const userMsg = { role: "user", content: message };
 
       const send = (data) => {
@@ -59,11 +68,17 @@ function createServer() {
           [...msgs, userMsg],
           model,
           true,
-          (chunk) => send({ type: "chunk", content: chunk })
+          (chunk) => send({ type: "chunk", content: chunk }),
+          (preMessage) => send({ type: "chunk", content: preMessage }),
         );
         msgs.push(userMsg);
         msgs.push({ role: "assistant", content: result.raw });
-        send({ type: "done", actions: result.actions, fullText: result.text, widgetData: result.widgetData });
+        send({
+          type: "done",
+          actions: result.actions,
+          fullText: result.text,
+          widgetData: result.widgetData,
+        });
       } catch (err) {
         console.error("[WS]", err.message);
         send({ type: "error", error: err.message });

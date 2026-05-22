@@ -4,6 +4,139 @@ const { executeToolsParallel, buildWidgetData } = require("./tools");
 const { DEFAULT_MODEL, LLM_OPTIONS } = require("../utils/config");
 const state = require("./vision/state");
 
+const STATUS_SEQUENCES = {
+  get_weather: [
+    (args) => `Connecting to live weather systems for ${args.city}...`,
+    (args) => `Analyzing atmospheric conditions in ${args.city}...`,
+    (args) => `Calculating forecast patterns for ${args.city}...`,
+    (args) => `Compiling real-time weather insights...`,
+  ],
+
+  get_time: [
+    (args) => `Synchronizing world clocks for ${args.city}...`,
+    (args) => `Retrieving current timezone data for ${args.city}...`,
+    (args) => `Calibrating temporal systems...`,
+  ],
+
+  get_news: [
+    (args) => `Scanning global news networks for "${args.query}"...`,
+    (args) => `Gathering latest headlines and reports...`,
+    (args) => `Filtering relevant developments for "${args.query}"...`,
+    (args) => `Analyzing media coverage and sources...`,
+  ],
+
+  fs_semantic: [
+    () => `Scanning indexed files and directories...`,
+    () => `Searching your workspace intelligently...`,
+    () => `Matching relevant documents and code...`,
+    () => `Analyzing filesystem context...`,
+  ],
+
+  system_control: [
+    () => `Interpreting system-level instruction...`,
+    () => `Preparing execution environment...`,
+    () => `Verifying command safety protocols...`,
+    () => `Initializing system operation...`,
+  ],
+
+  screen_analysis: [
+    () => `Capturing current screen context...`,
+    () => `Analyzing visible interface elements...`,
+    () => `Reading on-screen content and activity...`,
+    () => `Interpreting workspace state...`,
+  ],
+
+  code_analysis: [
+    () => `Inspecting source code structure...`,
+    () => `Analyzing logic and dependencies...`,
+    () => `Detecting potential issues and optimizations...`,
+    () => `Preparing development insights...`,
+  ],
+
+  browser_navigation: [
+    () => `Connecting to browser session...`,
+    () => `Inspecting active tabs and content...`,
+    () => `Analyzing web context...`,
+    () => `Preparing navigation response...`,
+  ],
+
+  memory_lookup: [
+    () => `Searching conversation memory...`,
+    () => `Retrieving relevant context...`,
+    () => `Cross-referencing previous interactions...`,
+    () => `Reconstructing contextual understanding...`,
+  ],
+
+  vision: [
+    () => `Processing visual input...`,
+    () => `Analyzing screen composition...`,
+    () => `Interpreting interface and text elements...`,
+    () => `Generating visual understanding...`,
+  ],
+
+  default: [
+    () => `Initializing cognitive systems...`,
+    () => `Analyzing your request...`,
+    () => `Reasoning through available context...`,
+    () => `Formulating an intelligent response...`,
+    () => `Optimizing final output...`,
+  ],
+};
+
+function buildStatusSequence(intents) {
+  // No intents = pure LLM call, use default sequence
+  if (!intents.length) return STATUS_SEQUENCES.default.map((fn) => fn());
+
+  const sequences = intents.map(({ tool, args }) => {
+    const seq = STATUS_SEQUENCES[tool] || STATUS_SEQUENCES.default;
+    return seq.map((fn) => fn(args));
+  });
+
+  // Round-robin interleave: [tool1[0], tool2[0], tool1[1], tool2[1], ...]
+  const result = [];
+  const maxLen = Math.max(...sequences.map((s) => s.length));
+  for (let i = 0; i < maxLen; i++) {
+    for (const seq of sequences) {
+      if (seq[i]) result.push(seq[i]);
+    }
+  }
+  return result;
+}
+
+function startStatusInterval(
+  sequence,
+  onPreResponse,
+  shouldStop,
+  intervalMs = 1800,
+) {
+  if (!sequence.length || !onPreResponse) {
+    return () => {};
+  }
+
+  let idx = 0;
+
+  const timer = setInterval(() => {
+    // stop immediately once streaming starts
+    if (shouldStop()) {
+      clearInterval(timer);
+      return;
+    }
+
+    onPreResponse(sequence[idx]);
+
+    idx++;
+
+    // loop continuously
+    if (idx >= sequence.length) {
+      idx = 0;
+    }
+  }, intervalMs);
+
+  return () => {
+    clearInterval(timer);
+  };
+}
+
 function parseActions(text) {
   const actions = [];
   let m;
@@ -52,56 +185,89 @@ function buildMessages(messages, lastUser, toolResults) {
   });
 }
 
-async function runChat(messages, model, stream = false, onChunk = null) {
+function needsScreenContext(userText) {
+  return /\b(screen|window|see|visible|open|showing|current|what is|whats)\b/i.test(
+    userText,
+  );
+}
+
+// onPreResponse(msg) — called immediately when tools start fetching
+async function runChat(
+  messages,
+  model,
+  stream = false,
+  onChunk = null,
+  onPreResponse = null,
+) {
   const modelName = model || DEFAULT_MODEL;
   const lastUser = messages.findLast((m) => m.role === "user");
   const userText = lastUser?.content || "";
 
-  // 1. Extract intents (instant, regex-based)
+  // 1. Extract intents
   const entities = extractEntities(userText);
   const intents = buildIntents(entities);
+  console.log("intents", intents);
 
-  // 2. Fetch tools in parallel
+  // 2. Start rotating status messages immediately (works for BOTH tool and default cases)
+  let hasStartedStreaming = false;
+
+  const shouldStopStatus = () => hasStartedStreaming;
+
+  let stopStatus = () => {};
+
+  if (onPreResponse) {
+    const sequence = buildStatusSequence(intents);
+    onPreResponse(sequence[0]);
+
+    stopStatus = startStatusInterval(
+      sequence,
+
+      // emit status safely
+      (msg) => {
+        if (!hasStartedStreaming) {
+          onPreResponse(msg);
+        }
+      },
+
+      shouldStopStatus,
+
+      // delay
+      10000,
+    );
+  }
+
+  // 3. Fetch tools in parallel if needed
   let toolResults = [];
   let widgetData = null;
 
   if (intents.length > 0) {
     const t0 = Date.now();
+
     toolResults = await executeToolsParallel(intents);
+
+    // stopStatus();
+
     widgetData = buildWidgetData(toolResults);
-    console.log(`[TOOLS] fetched in ${Date.now() - t0}ms`);
   }
+  // Note: for no-tool (default) case, stopStatus() is called after LLM starts streaming below
 
-  // 3. Build enriched message history
+  // 4. Build enriched messages
   const enrichedMessages = buildMessages(messages, lastUser, toolResults);
-  const visionContext = `
-    ACTIVE APP:
-    ${state.activeWindow?.owner?.name || "Unknown"}
 
-    WINDOW TITLE:
-    ${state.activeWindow?.title || "Unknown"}
-
-    VISIBLE SCREEN OCR:
-    ${(state.lastOCR || "").slice(0, 4000)}
-    `;
+  const visionContext = needsScreenContext(userText)
+    ? `ACTIVE APP: ${state.activeWindow?.owner?.name || "Unknown"}\nWINDOW TITLE: ${state.activeWindow?.title || "Unknown"}\nVISIBLE SCREEN OCR: ${(state.lastOCR || "").slice(0, 2000)}`
+    : `ACTIVE APP: ${state.activeWindow?.owner?.name || "Unknown"}`;
 
   const finalMessages = enrichedMessages.map((msg, index) => {
-    // inject only into latest user message
     if (msg.role === "user" && index === enrichedMessages.length - 1) {
       return {
         ...msg,
-        content: `
-${msg.content}
-
-<screen_context>
-${visionContext}
-</screen_context>
-`,
+        content: `${msg.content}\n\n<screen_context>\n${visionContext}\n</screen_context>`,
       };
     }
-
     return msg;
   });
+
   const ollamaBody = {
     model: modelName,
     messages: finalMessages,
@@ -109,26 +275,41 @@ ${visionContext}
     options: LLM_OPTIONS,
   };
 
-  // 4. Single LLM call
+  // 5. Single LLM call — stop status interval the moment first chunk arrives
   if (stream && onChunk) {
     return new Promise((resolve, reject) => {
+      let statusStopped = false;
       ollama.stream(
         { ...ollamaBody, stream: true },
-        onChunk,
+        (chunk) => {
+          // Kill status messages the instant the LLM starts responding
+          if (!hasStartedStreaming) {
+            hasStartedStreaming = true;
+            stopStatus();
+          }
+          onChunk(chunk);
+        },
         (fullText) => {
+          stopStatus(); // Safety: ensure stopped even if no chunks came
           const { cleanText, actions } = parseActions(fullText);
           resolve({ text: cleanText, raw: fullText, actions, widgetData });
         },
-        reject,
+        (err) => {
+          stopStatus();
+          reject(err);
+        },
       );
     });
   }
 
-  const data = await ollama.post({ ...ollamaBody, stream: false });
-  if (data.error) throw new Error(data.error);
-  const fullText = data.message?.content || "";
-  const { cleanText, actions } = parseActions(fullText);
-  return { text: cleanText, raw: fullText, actions, widgetData };
+  // Non-streaming pat
+  // const data = await ollama.post({ ...ollamaBody, stream: false });
+  // console.log("datadata",data)
+  // stopStatus();
+  // if (data.error) throw new Error(data.error);
+  // const fullText = data.message?.content || "";
+  // const { cleanText, actions } = parseActions(fullText);
+  // return { text: cleanText, raw: fullText, actions, widgetData };
 }
 
 module.exports = { runChat };

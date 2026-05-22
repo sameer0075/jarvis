@@ -390,7 +390,31 @@ const ChatMessage = memo(({ msg, onSpeak, onAction }) => {
           }}>
             {isEmpty ? (
               <ThinkingDots />
-            ) : msg.streaming ? (
+            ) : msg.isStatus ? (
+  // Pre-response status — styled differently from real content
+  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+    <div style={{
+      width: 8, height: 8, borderRadius: "50%",
+      background: "#ffd166",
+      boxShadow: "0 0 10px #ffd166",
+      animation: "pulse 1s ease-in-out infinite",
+      flexShrink: 0,
+    }} />
+    <span style={{
+      fontFamily: "var(--font-mono)", fontSize: "12px",
+      color: "rgba(255,209,102,0.8)", letterSpacing: "0.12em",
+      animation: "decode 0.3s ease-out",
+    }}>
+      {msg.content}
+    </span>
+    {/* Animated ellipsis */}
+    <span style={{ fontFamily: "var(--font-mono)", color: "rgba(255,209,102,0.4)" }}>
+      {[".", ".", "."].map((d, i) => (
+        <span key={i} style={{ animation: `typing-dot 1.2s ${i * 0.2}s ease-in-out infinite` }}>{d}</span>
+      ))}
+    </span>
+  </div>
+) : msg.streaming ? (
               // Raw mono text while streaming
               <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                 {msg.content}

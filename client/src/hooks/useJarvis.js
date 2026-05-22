@@ -88,6 +88,18 @@ export function useJarvis() {
           ws.onmessage = (e) => {
             const data = JSON.parse(e.data);
 
+            if (data.type === "status") {
+              // Update the streaming placeholder with the pre-response status
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamId
+                    ? { ...m, content: data.content, streaming: true, isStatus: true }
+                    : m
+                )
+              );
+              return;
+            }
+
             if (data.type === "chunk") {
               setMessages((prev) =>
                 prev.map((m) => (m.id === streamId ? { ...m, content: m.content + data.content } : m))

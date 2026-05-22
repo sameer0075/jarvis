@@ -36,11 +36,9 @@ async function indexSingle(filePath) {
       normalized,
       { upsert: true }
     );
-    console.log("[WATCHER] Updated:", topPath);
   } catch {
     // Top-level item was deleted
     await FileIndex.deleteOne({ path: topPath });
-    console.log("[WATCHER] Removed:", topPath);
   }
 }
 
@@ -54,7 +52,6 @@ async function removeSingle(filePath) {
     await fs.stat(topPath); // still exists, don't remove
   } catch {
     await FileIndex.deleteOne({ path: topPath });
-    console.log("[WATCHER] Removed from index:", topPath);
   }
 }
 
@@ -74,8 +71,6 @@ function startFilesystemWatcher() {
   watcher.on("change", indexSingle);
   watcher.on("unlink", removeSingle);
   watcher.on("unlinkDir", removeSingle);
-
-  console.log("[WATCHER] Started watching:", watchPaths);
 }
 
 module.exports = { startFilesystemWatcher };

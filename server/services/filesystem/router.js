@@ -38,7 +38,6 @@ async function routeFileIntent(userMessage) {
     });
 
     const raw = (data.message?.content || "").trim();
-    console.log("[FILE ROUTER RAW]", raw);
 
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) { console.warn("[FILE ROUTER] No JSON found"); return null; }
@@ -46,7 +45,6 @@ async function routeFileIntent(userMessage) {
     const parsed = JSON.parse(jsonMatch[0]);
     if (!parsed.tool || !parsed.args) { console.warn("[FILE ROUTER] Missing tool/args"); return null; }
 
-    console.log("[FILE ROUTER] Parsed:", parsed);
     return parsed;
   } catch (e) {
     console.warn("[FILE ROUTER] Failed:", e.message);

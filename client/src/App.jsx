@@ -38,6 +38,97 @@ const HexDecoration = () => (
   </svg>
 );
 
+/* ── Big Speaking Overlay Component ── */
+function SpeakingOverlay({ visible }) {
+  const bars = Array.from({ length: 40 }, (_, i) => ({
+    h: 18 + Math.abs(Math.sin(i * 0.73 + 1.1)) * 34,
+    o: 0.25 + Math.abs(Math.sin(i * 0.91)) * 0.65,
+    dur: (0.55 + (Math.sin(i * 0.44) * 0.5 + 0.5) * 0.55).toFixed(2),
+    del: ((Math.sin(i * 0.31) * 0.5 + 0.5) * 0.9).toFixed(2),
+  }));
+
+  return (
+    <div style={{
+      position: "absolute",
+      inset: 0,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10,
+      background: "rgba(2,4,8,0.92)",
+      backdropFilter: "blur(16px)",
+      opacity: visible ? 1 : 0,
+      pointerEvents: visible ? "auto" : "none",
+      transition: "opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1)",
+    }}>
+      {visible && (
+        <style>{`
+          @keyframes overlay-pulse {
+            0%   { transform: scale(0.88); opacity: 0.65; }
+            100% { transform: scale(2.05); opacity: 0; }
+          }
+          @keyframes overlay-wave {
+            0%, 100% { transform: scaleY(0.18); }
+            50%       { transform: scaleY(1); }
+          }
+        `}</style>
+      )}
+
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", opacity: 0.035 }}>
+        <svg width="70%" height="70%" viewBox="0 0 100 100" style={{ maxWidth: "520px", maxHeight: "520px" }}>
+          <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="none" stroke="#ffd166" strokeWidth="0.35" />
+          <polygon points="50,20 80,35 80,65 50,80 20,65 20,35" fill="none" stroke="#ffd166" strokeWidth="0.25" />
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#ffd166" strokeWidth="0.15" strokeDasharray="3 5" />
+        </svg>
+      </div>
+
+      <div style={{ position: "relative", width: "400px", height: "400px", maxWidth: "55vw", maxHeight: "55vw", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} style={{
+            position: "absolute",
+            inset: `${-6 - i * 11}%`,
+            borderRadius: "50%",
+            border: `1px solid rgba(255,209,102,${0.28 - i * 0.06})`,
+            animation: `overlay-pulse ${2.1 + i * 0.35}s ${i * 0.45}s ease-out infinite`,
+            pointerEvents: "none",
+          }} />
+        ))}
+
+        <div style={{ filter: "drop-shadow(0 0 45px rgba(255,209,102,0.35))", transform: "scale(1.05)" }}>
+          <ArcReactor size={360} active={true} speaking={true} />
+        </div>
+      </div>
+
+      <div style={{ marginTop: "36px", textAlign: "center", zIndex: 2 }}>
+        <div style={{
+          fontFamily: "var(--font-display)",
+          fontSize: "14px",
+          letterSpacing: "0.4em",
+          color: "#ffd166",
+          textShadow: "0 0 25px rgba(255,209,102,0.5)",
+          marginBottom: "22px",
+        }}>
+          J.A.R.V.I.S :: VOCALIZING
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "3px", height: "52px" }}>
+          {bars.map((b, i) => (
+            <div key={i} style={{
+              width: "3px",
+              height: `${b.h}px`,
+              background: `rgba(255,209,102,${b.o})`,
+              borderRadius: "2px",
+              transformOrigin: "center",
+              animation: `overlay-wave ${b.dur}s ease-in-out ${b.del}s infinite alternate`,
+            }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [input, setInput] = useState("");
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -45,6 +136,10 @@ export default function App() {
   const [newsState, setNewsState] = useState(false);
   const [stats, setStats] = useState(false);
   const [fileBrowser, setFileBrowser] = useState({ open: false, data: null });
+  
+  // NEW: tracks whether the big overlay should be shown (thinking + streaming + speaking)
+  const [responseActive, setResponseActive] = useState(false);
+  
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const chatPanelRef = useRef(null);
@@ -52,13 +147,13 @@ export default function App() {
   const lastSpokenLenRef = useRef(0);
   const ttsBufferRef = useRef("");
   const processedActionsRef = useRef(new Set());
+  const overlayTimerRef = useRef(null);
 
   const API_BASE = "http://localhost:3001";
 
   const { messages, isThinking, model, models, status, setModel, sendMessage, clearChat, checkStatus } = useJarvis();
   const lastAssistant = messages.filter(m => m.role === "assistant").pop();
-  // const weatherState = lastAssistant?.widgetData?.weather || null;
-  // const newsState = lastAssistant?.widgetData?.news || null;
+
   const handleAction = useCallback((action) => {
     if (action.type === "OPEN_URL") window.open(action.value, "_blank", "noopener,noreferrer");
   }, []);
@@ -66,7 +161,7 @@ export default function App() {
   const handleSend = useCallback((text, opts = {}) => {
     const msg = (text || input).trim();
     if (!msg) return;
-    fetchQueryNews(msg)
+    fetchQueryNews(msg);
     setInput("");
     if (opts.fromVoice) voiceTurnRef.current = true;
     sendMessage(msg);
@@ -81,55 +176,43 @@ export default function App() {
     onEnd: () => {},
   });
 
-  const fetchTrendingNews = async() => {
+  const fetchTrendingNews = async () => {
     const result = await fetch(`${API_BASE}/api/trending-news`);
-    const data = await result.json()
-    setNewsState(data)
-  }
+    const data = await result.json();
+    setNewsState(data);
+  };
 
-  const fetchQueryNews = async(query) => {
+  const fetchQueryNews = async (query) => {
     const result = await fetch(`${API_BASE}/api/search-news/${query}`);
-    const data = await result.json()
-    setNewsState(data)
-  }
+    const data = await result.json();
+    setNewsState(data);
+  };
 
   const fetchCityFromIp = async () => {
-    const response = await fetch("https://ipinfo.io/json")
-    const data = await response.json()
-    console.log("response",data)
+    const response = await fetch("https://ipinfo.io/json");
+    const data = await response.json();
     const result = await fetch(`${API_BASE}/api/get-weather-details/${data.city}`);
-    const weather = await result.json()
-    console.log("weather",weather)
-    setWeatherState(weather)
-  }
+    const weather = await result.json();
+    setWeatherState(weather);
+  };
 
   const fetchStats = async () => {
     const res = await fetch(`${API_BASE}/api/get-system-stats`);
     const data = await res.json();
-
     setStats(data);
   };
 
   useEffect(() => {
     if (lastAssistant?.widgetData?.filesystem) {
       const fsData = lastAssistant.widgetData.filesystem;
-      
-      // Open FileBrowser for any filesystem result that has entries
       if (fsData.ok && fsData.entries?.length > 0) {
         setFileBrowser({ open: true, data: fsData });
-      }
-      // find_and_open: file was opened server-side, but still show matches if any
-      if (fsData.type === "find_and_open" && fsData.ok) {
-        // Already opened, no modal needed — JARVIS confirms in chat
       }
     }
   }, [lastAssistant]);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  useEffect(() => { fetchStats(); }, []);
 
-  // Auto-open URLs
   useEffect(() => {
     const last = messages[messages.length - 1];
     if (!last || last.role !== "assistant" || !last.actions?.length) return;
@@ -141,19 +224,37 @@ export default function App() {
   }, [messages]);
 
   useEffect(() => {
-    if(lastAssistant) {
-        const weatherData = lastAssistant?.widgetData?.weather || null;
-        const newsData = lastAssistant?.widgetData?.news || null;
-        if(!newsState) {
-          setNewsState(newsData)
-        }
-        setWeatherState(weatherData)
+    if (lastAssistant) {
+      const weatherData = lastAssistant?.widgetData?.weather || null;
+      const newsData = lastAssistant?.widgetData?.news || null;
+      if (!newsState) setNewsState(newsData);
+      setWeatherState(weatherData);
     }
-  },[lastAssistant])
+  }, [lastAssistant]);
 
+  useEffect(() => { fetchCityFromIp(); }, []);
+
+  // ── NEW: lock overlay during the entire response lifecycle ──
   useEffect(() => {
-    fetchCityFromIp()
-  },[])
+    const lastMsg = messages[messages.length - 1];
+    const isAssistantResponding = lastMsg?.role === "assistant" && (lastMsg?.streaming || isSpeaking);
+    const shouldShow = isThinking || isAssistantResponding;
+
+    if (shouldShow) {
+      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+      setResponseActive(true);
+    } else if (responseActive) {
+      // 900ms grace period so it never flickers between streaming end and TTS start
+      overlayTimerRef.current = setTimeout(() => {
+        const stillLast = messages[messages.length - 1];
+        const stillActive = stillLast?.role === "assistant" && (stillLast?.streaming || isSpeaking);
+        if (!isThinking && !stillActive) setResponseActive(false);
+      }, 900);
+    }
+    return () => {
+      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+    };
+  }, [messages, isThinking, isSpeaking]);
 
   // Streaming TTS
   useEffect(() => {
@@ -191,9 +292,8 @@ export default function App() {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  useEffect(()=>{
-    fetchTrendingNews()
-  },[])
+  useEffect(() => { fetchTrendingNews(); }, []);
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
@@ -271,9 +371,21 @@ export default function App() {
 
       {/* ── Main Viewport ── */}
       <main style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative", zIndex: 1 }}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-          {/* System Log */}
-          <div ref={chatPanelRef} style={{ flex: 1, overflowY: "auto", paddingTop: "16px", paddingBottom: "8px" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative" }}>
+
+          {/* BIG SPEAKING OVERLAY — stays for entire response (thinking → streaming → speaking) */}
+          <SpeakingOverlay visible={responseActive} />
+
+          {/* System Log — hidden while overlay is active */}
+          <div ref={chatPanelRef} style={{
+            flex: 1,
+            overflowY: "auto",
+            paddingTop: "16px",
+            paddingBottom: "8px",
+            opacity: responseActive ? 0 : 1,
+            transition: "opacity 0.4s ease 0.05s",
+            pointerEvents: responseActive ? "none" : "auto",
+          }}>
             {/* Welcome header in log */}
             {messages.length <= 1 && (
               <div style={{ padding: "0 24px 20px", borderBottom: "1px solid var(--border)", marginBottom: "16px" }}>
@@ -322,146 +434,84 @@ export default function App() {
 
             <div ref={messagesEndRef} />
           </div>
-                  {/* ── Terminal Input ── */}
-        <div style={{
+
+          {/* ── Terminal Input ── */}
+          <div style={{
             borderTop: "1px solid var(--border)",
             background: "rgba(2,4,8,0.92)",
             backdropFilter: "blur(16px)",
             position: "relative",
             flexShrink: 0,
-        }}>
-          {/* Top accent line */}
-          <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--arc-primary), transparent)", opacity: 0.3 }} />
+          }}>
+            <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--arc-primary), transparent)", opacity: 0.3 }} />
 
-          {/* <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", padding: "14px 24px" }}>
-            <span style={{
-              color: "var(--arc-primary)",
-              fontFamily: "var(--font-mono)",
-              fontSize: "16px",
-              paddingBottom: "10px",
-              textShadow: "0 0 10px var(--arc-primary)",
-            }}>❯</span>
-
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={isListening ? "Listening..." : handsFreeActive ? "Hands-free active. Speak or type command..." : "Enter command..."}
-              rows={1}
-              style={{
-                flex: 1,
-                background: "transparent",
-                border: "none",
-                color: "var(--text-primary)",
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", padding: "14px 24px" }}>
+              <span style={{
+                color: "var(--arc-primary)",
                 fontFamily: "var(--font-mono)",
-                fontSize: "14px",
-                padding: "8px 0",
-                outline: "none",
-                resize: "none",
-                lineHeight: 1.6,
-                caretColor: "var(--arc-primary)",
-              }}
-              disabled={isListening}
-            />
+                fontSize: "16px",
+                paddingBottom: "10px",
+                textShadow: "0 0 10px var(--arc-primary)",
+                flexShrink: 0,
+              }}>❯</span>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingBottom: "4px" }}>
-              <VoiceButton
-                isListening={isListening} isSpeaking={isSpeaking}
-                transcript={transcript} onStart={startListening}
-                onStop={stopListening} onStopSpeaking={stopSpeaking} supported={supported}
-              />
-              <button
-                onClick={() => handleSend()}
-                disabled={!input.trim() || isThinking}
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={isListening ? "Listening..." : handsFreeActive ? "Hands-free active. Speak or type command..." : "Enter command..."}
+                rows={1}
                 style={{
-                  background: input.trim() && !isThinking ? "rgba(0,212,255,0.12)" : "transparent",
-                  border: `1px solid ${input.trim() && !isThinking ? "var(--arc-primary)" : "var(--border)"}`,
-                  borderRadius: "2px",
-                  color: input.trim() && !isThinking ? "var(--arc-primary)" : "var(--text-dim)",
-                  cursor: input.trim() && !isThinking ? "pointer" : "not-allowed",
-                  padding: "7px 14px",
-                  display: "flex", alignItems: "center", gap: "6px",
-                  fontFamily: "var(--font-mono)", fontSize: "10px",
-                  letterSpacing: "0.15em", transition: "all 0.2s",
+                  flex: responseActive ? "0 0 0" : 1,
+                  maxWidth: responseActive ? "0" : "none",
+                  overflow: "hidden",
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "14px",
+                  padding: responseActive ? "0" : "8px 0",
+                  outline: "none",
+                  resize: "none",
+                  lineHeight: 1.6,
+                  caretColor: "var(--arc-primary)",
+                  transition: "all 0.3s ease",
                 }}
-              >
-                {isThinking ? (
-                  <div style={{ width: 12, height: 12, border: "2px solid var(--arc-dim)", borderTopColor: "var(--arc-primary)", borderRadius: "50%", animation: "rotate 0.8s linear infinite" }} />
-                ) : <Send size={12} />}
-                EXECUTE
-              </button>
-            </div>
-          </div> */}
+                disabled={isListening || responseActive}
+              />
 
-          <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", padding: "14px 24px" }}>
-  
-  <span style={{
-    color: "var(--arc-primary)",
-    fontFamily: "var(--font-mono)",
-    fontSize: "16px",
-    paddingBottom: "10px",
-    textShadow: "0 0 10px var(--arc-primary)",
-    flexShrink: 0,
-  }}>❯</span>
- 
-  <textarea
-    ref={inputRef}
-    value={input}
-    onChange={(e) => setInput(e.target.value)}
-    onKeyDown={handleKeyDown}
-    placeholder={isListening ? "Listening..." : handsFreeActive ? "Hands-free active. Speak or type command..." : "Enter command..."}
-    rows={1}
-    style={{
-      flex: isSpeaking ? "0 0 0" : 1,          // ← collapse when speaking
-      maxWidth: isSpeaking ? "0" : "none",       // ← hide when speaking
-      overflow: "hidden",
-      background: "transparent",
-      border: "none",
-      color: "var(--text-primary)",
-      fontFamily: "var(--font-mono)",
-      fontSize: "14px",
-      padding: isSpeaking ? "0" : "8px 0",
-      outline: "none",
-      resize: "none",
-      lineHeight: 1.6,
-      caretColor: "var(--arc-primary)",
-      transition: "all 0.3s ease",
-    }}
-    disabled={isListening || isSpeaking}
-  />
- 
-  <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingBottom: "4px", flex: isSpeaking ? 1 : "none", minWidth: 0 }}>
-    <VoiceButton
-      isListening={isListening} isSpeaking={isSpeaking}
-      transcript={transcript} onStart={startListening}
-      onStop={stopListening} onStopSpeaking={stopSpeaking} supported={supported}
-    />
-    {!isSpeaking && (
-      <button
-        onClick={() => handleSend()}
-        disabled={!input.trim() || isThinking}
-        style={{
-          background: input.trim() && !isThinking ? "rgba(0,212,255,0.12)" : "transparent",
-          border: `1px solid ${input.trim() && !isThinking ? "var(--arc-primary)" : "var(--border)"}`,
-          borderRadius: "2px",
-          color: input.trim() && !isThinking ? "var(--arc-primary)" : "var(--text-dim)",
-          cursor: input.trim() && !isThinking ? "pointer" : "not-allowed",
-          padding: "7px 14px",
-          display: "flex", alignItems: "center", gap: "6px",
-          fontFamily: "var(--font-mono)", fontSize: "10px",
-          letterSpacing: "0.15em", transition: "all 0.2s",
-        }}
-      >
-        {isThinking ? (
-          <div style={{ width: 12, height: 12, border: "2px solid var(--arc-dim)", borderTopColor: "var(--arc-primary)", borderRadius: "50%", animation: "rotate 0.8s linear infinite" }} />
-        ) : <Send size={12} />}
-        EXECUTE
-      </button>
-    )}
-  </div>
-</div>
-        </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingBottom: "4px", flex: responseActive ? 1 : "none", minWidth: 0 }}>
+                <VoiceButton
+                  isListening={isListening} isSpeaking={isSpeaking}
+                  transcript={transcript} onStart={startListening}
+                  onStop={stopListening} onStopSpeaking={stopSpeaking} supported={supported}
+                />
+                {!responseActive && (
+                  <button
+                    onClick={() => handleSend()}
+                    disabled={!input.trim() || isThinking}
+                    style={{
+                      background: input.trim() && !isThinking ? "rgba(0,212,255,0.12)" : "transparent",
+                      border: `1px solid ${input.trim() && !isThinking ? "var(--arc-primary)" : "var(--border)"}`,
+                      borderRadius: "2px",
+                      color: input.trim() && !isThinking ? "var(--arc-primary)" : "var(--text-dim)",
+                      cursor: input.trim() && !isThinking ? "pointer" : "not-allowed",
+                      padding: "7px 14px",
+                      display: "flex", alignItems: "center", gap: "6px",
+                      fontFamily: "var(--font-mono)", fontSize: "10px",
+                      letterSpacing: "0.15em", transition: "all 0.2s",
+                    }}
+                  >
+                    {isThinking ? (
+                      <div style={{ width: 12, height: 12, border: "2px solid var(--arc-dim)", borderTopColor: "var(--arc-primary)", borderRadius: "50%", animation: "rotate 0.8s linear infinite" }} />
+                    ) : <Send size={12} />}
+                    EXECUTE
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
         <JarvisWidgets weatherData={weatherState} newsData={newsState} statsData={stats} />
       </main>

@@ -17,16 +17,12 @@ function resolveSearchDir(searchDir) {
 
 async function searchFiles({ query, searchDir = "home", onlyFolders = false, onlyFiles = false, limit = 15 }) {
   const resolvedDir = resolveSearchDir(searchDir);
-  console.log("[SEARCH] query:", query, "| searchDir:", searchDir, "| resolved:", resolvedDir);
-
   // Build mongo filter — only filter by directory if specific folder requested
   const dbFilter = resolvedDir
     ? { directory: resolvedDir }  // exact parent directory match (top-level items)
     : {};
  
   const docs = await FileIndex.find(dbFilter).lean();
-  console.log("[SEARCH] docs from mongo:", docs.length);
-
   if (!docs.length) {
     return { ok: false, error: "No indexed files found. Index may still be building.", results: [] };
   }
@@ -53,8 +49,6 @@ async function searchFiles({ query, searchDir = "home", onlyFolders = false, onl
     size:        r.item.size,
     modifiedAt:  r.item.modifiedAt,
   }));
-
-  console.log("[SEARCH] fuse hits:", results.length);
 
   if (onlyFolders) results = results.filter(r => r.isDirectory);
   if (onlyFiles)   results = results.filter(r => !r.isDirectory);

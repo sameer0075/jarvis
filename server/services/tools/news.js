@@ -47,7 +47,6 @@ async function fetchNews(query) {
 
     return result;
   } catch (e) {
-    console.log("fetchNews error", e);
     return JSON.stringify({ error: e.message });
   }
 }
@@ -68,7 +67,6 @@ async function fetchTrendingNews() {
 
     return articles;
   } catch (e) {
-    console.log("fetchTrendingNews error", e);
     return [];
   }
 }
@@ -90,7 +88,6 @@ async function fetchQueryNews(query) {
 
     return articles;
   } catch (e) {
-    console.log("fetchQueryNews error", e);
     return [];
   }
 }

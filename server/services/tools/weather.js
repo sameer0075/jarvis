@@ -8,7 +8,6 @@ async function fetchWeather(city) {
     const url = `${BASE_URL}?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`;
     const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
     const d = await res.json();
-    console.log("weather result",d)
 
     if (d.cod !== 200) return JSON.stringify({ error: d.message });
 
@@ -25,7 +24,6 @@ async function fetchWeather(city) {
 
     return result;
   } catch (e) {
-    console.log("error",e)
     return JSON.stringify({ error: e.message });
   }
 }
@@ -35,7 +33,6 @@ async function fetchWeatherDetails(city) {
     const url = `${BASE_URL}?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`;
     const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
     const d = await res.json();
-    console.log("weather result",d)
 
     if (d.cod !== 200) return JSON.stringify({ error: d.message });
 
@@ -52,7 +49,6 @@ async function fetchWeatherDetails(city) {
 
     return result;
   } catch (e) {
-    console.log("error weather",e)
     return JSON.stringify({ error: e.message });
   }
 }

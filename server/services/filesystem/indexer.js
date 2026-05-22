@@ -22,7 +22,6 @@ async function indexTopLevel(targetDir) {
   try {
     entries = await fs.readdir(targetDir, { withFileTypes: true });
   } catch (e) {
-    console.log("[INDEXER] Cannot read:", targetDir, e.message);
     return 0;
   }
 
@@ -42,7 +41,6 @@ async function indexTopLevel(targetDir) {
       );
       count++;
     } catch (e) {
-      console.log("[INDEXER] Error:", fullPath, e.message);
     }
   }
   return count;
@@ -56,15 +54,11 @@ async function buildFilesystemIndex() {
 
   for (const dirName of TARGET_DIRS) {
     const fullDir = path.join(homeDir, dirName);
-
-    console.log("[INDEXER] Scanning top-level:", fullDir);
-
     let entries;
 
     try {
       entries = await fs.readdir(fullDir, { withFileTypes: true });
     } catch (e) {
-      console.log("[INDEXER] Cannot read:", fullDir, e.message);
       continue;
     }
 
@@ -107,7 +101,6 @@ async function buildFilesystemIndex() {
 
         total++;
       } catch (e) {
-        console.log("[INDEXER] Error:", fullPath, e.message);
       }
     }
   }
@@ -123,11 +116,7 @@ async function buildFilesystemIndex() {
     await FileIndex.deleteMany({
       path: { $in: deletedPaths }
     });
-
-    console.log(`[INDEXER] Removed ${deletedPaths.length} deleted items`);
   }
-
-  console.log(`[INDEXER] Complete — ${total} indexed`);
 }
 
 module.exports = { buildFilesystemIndex, indexTopLevel };
