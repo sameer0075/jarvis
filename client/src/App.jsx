@@ -8,12 +8,28 @@ import { useJarvis } from "./hooks/useJarvis.js";
 import { useVoice } from "./hooks/useVoice.js";
 import JarvisWidgets from "./components/JarvisWidgets.jsx";
 import FileBrowser from "./components/FileBrowser.jsx";
+import { useClap } from "./hooks/useClap.js";
 
 const GridBg = () => (
-  <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.04, pointerEvents: "none" }} preserveAspectRatio="none">
+  <svg
+    style={{
+      position: "absolute",
+      inset: 0,
+      width: "100%",
+      height: "100%",
+      opacity: 0.04,
+      pointerEvents: "none",
+    }}
+    preserveAspectRatio="none"
+  >
     <defs>
       <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
-        <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#00d4ff" strokeWidth="0.5" />
+        <path
+          d="M 64 0 L 0 0 0 64"
+          fill="none"
+          stroke="#00d4ff"
+          strokeWidth="0.5"
+        />
       </pattern>
     </defs>
     <rect width="100%" height="100%" fill="url(#grid)" />
@@ -21,20 +37,65 @@ const GridBg = () => (
 );
 
 const ScanLine = () => (
-  <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
-    <div style={{
-      position: "absolute", left: 0, right: 0, height: "2px",
-      background: "linear-gradient(90deg, transparent, rgba(0,212,255,0.12), transparent)",
-      animation: "scan 8s linear infinite",
-    }} />
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      overflow: "hidden",
+      pointerEvents: "none",
+      zIndex: 0,
+    }}
+  >
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        height: "2px",
+        background:
+          "linear-gradient(90deg, transparent, rgba(0,212,255,0.12), transparent)",
+        animation: "scan 8s linear infinite",
+      }}
+    />
   </div>
 );
 
 const HexDecoration = () => (
-  <svg style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "600px", height: "600px", opacity: 0.03, pointerEvents: "none", zIndex: 0 }} viewBox="0 0 100 100">
-    <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="none" stroke="#00d4ff" strokeWidth="0.3" />
-    <polygon points="50,20 80,35 80,65 50,80 20,65 20,35" fill="none" stroke="#00d4ff" strokeWidth="0.2" />
-    <circle cx="50" cy="50" r="45" fill="none" stroke="#00d4ff" strokeWidth="0.15" strokeDasharray="2 4" />
+  <svg
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%,-50%)",
+      width: "600px",
+      height: "600px",
+      opacity: 0.03,
+      pointerEvents: "none",
+      zIndex: 0,
+    }}
+    viewBox="0 0 100 100"
+  >
+    <polygon
+      points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5"
+      fill="none"
+      stroke="#00d4ff"
+      strokeWidth="0.3"
+    />
+    <polygon
+      points="50,20 80,35 80,65 50,80 20,65 20,35"
+      fill="none"
+      stroke="#00d4ff"
+      strokeWidth="0.2"
+    />
+    <circle
+      cx="50"
+      cy="50"
+      r="45"
+      fill="none"
+      stroke="#00d4ff"
+      strokeWidth="0.15"
+      strokeDasharray="2 4"
+    />
   </svg>
 );
 
@@ -48,20 +109,22 @@ function SpeakingOverlay({ visible }) {
   }));
 
   return (
-    <div style={{
-      position: "absolute",
-      inset: 0,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 10,
-      background: "rgba(2,4,8,0.92)",
-      backdropFilter: "blur(16px)",
-      opacity: visible ? 1 : 0,
-      pointerEvents: visible ? "auto" : "none",
-      transition: "opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1)",
-    }}>
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 10,
+        background: "rgba(2,4,8,0.92)",
+        backdropFilter: "blur(16px)",
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? "auto" : "none",
+        transition: "opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1)",
+      }}
+    >
       {visible && (
         <style>{`
           @keyframes overlay-pulse {
@@ -75,53 +138,118 @@ function SpeakingOverlay({ visible }) {
         `}</style>
       )}
 
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", opacity: 0.035 }}>
-        <svg width="70%" height="70%" viewBox="0 0 100 100" style={{ maxWidth: "520px", maxHeight: "520px" }}>
-          <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="none" stroke="#ffd166" strokeWidth="0.35" />
-          <polygon points="50,20 80,35 80,65 50,80 20,65 20,35" fill="none" stroke="#ffd166" strokeWidth="0.25" />
-          <circle cx="50" cy="50" r="45" fill="none" stroke="#ffd166" strokeWidth="0.15" strokeDasharray="3 5" />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
+          opacity: 0.035,
+        }}
+      >
+        <svg
+          width="70%"
+          height="70%"
+          viewBox="0 0 100 100"
+          style={{ maxWidth: "520px", maxHeight: "520px" }}
+        >
+          <polygon
+            points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5"
+            fill="none"
+            stroke="#ffd166"
+            strokeWidth="0.35"
+          />
+          <polygon
+            points="50,20 80,35 80,65 50,80 20,65 20,35"
+            fill="none"
+            stroke="#ffd166"
+            strokeWidth="0.25"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r="45"
+            fill="none"
+            stroke="#ffd166"
+            strokeWidth="0.15"
+            strokeDasharray="3 5"
+          />
         </svg>
       </div>
 
-      <div style={{ position: "relative", width: "400px", height: "400px", maxWidth: "55vw", maxHeight: "55vw", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {[0, 1, 2, 3].map(i => (
-          <div key={i} style={{
-            position: "absolute",
-            inset: `${-6 - i * 11}%`,
-            borderRadius: "50%",
-            border: `1px solid rgba(255,209,102,${0.28 - i * 0.06})`,
-            animation: `overlay-pulse ${2.1 + i * 0.35}s ${i * 0.45}s ease-out infinite`,
-            pointerEvents: "none",
-          }} />
+      <div
+        style={{
+          position: "relative",
+          width: "400px",
+          height: "400px",
+          maxWidth: "55vw",
+          maxHeight: "55vw",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              inset: `${-6 - i * 11}%`,
+              borderRadius: "50%",
+              border: `1px solid rgba(255,209,102,${0.28 - i * 0.06})`,
+              animation: `overlay-pulse ${2.1 + i * 0.35}s ${i * 0.45}s ease-out infinite`,
+              pointerEvents: "none",
+            }}
+          />
         ))}
 
-        <div style={{ filter: "drop-shadow(0 0 45px rgba(255,209,102,0.35))", transform: "scale(1.05)" }}>
+        <div
+          style={{
+            filter: "drop-shadow(0 0 45px rgba(255,209,102,0.35))",
+            transform: "scale(1.05)",
+          }}
+        >
           <ArcReactor size={360} active={true} speaking={true} />
         </div>
       </div>
 
       <div style={{ marginTop: "36px", textAlign: "center", zIndex: 2 }}>
-        <div style={{
-          fontFamily: "var(--font-display)",
-          fontSize: "14px",
-          letterSpacing: "0.4em",
-          color: "#ffd166",
-          textShadow: "0 0 25px rgba(255,209,102,0.5)",
-          marginBottom: "22px",
-        }}>
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "14px",
+            letterSpacing: "0.4em",
+            color: "#ffd166",
+            textShadow: "0 0 25px rgba(255,209,102,0.5)",
+            marginBottom: "22px",
+          }}
+        >
           J.A.R.V.I.S :: VOCALIZING
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "3px", height: "52px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "3px",
+            height: "52px",
+          }}
+        >
           {bars.map((b, i) => (
-            <div key={i} style={{
-              width: "3px",
-              height: `${b.h}px`,
-              background: `rgba(255,209,102,${b.o})`,
-              borderRadius: "2px",
-              transformOrigin: "center",
-              animation: `overlay-wave ${b.dur}s ease-in-out ${b.del}s infinite alternate`,
-            }} />
+            <div
+              key={i}
+              style={{
+                width: "3px",
+                height: `${b.h}px`,
+                background: `rgba(255,209,102,${b.o})`,
+                borderRadius: "2px",
+                transformOrigin: "center",
+                animation: `overlay-wave ${b.dur}s ease-in-out ${b.del}s infinite alternate`,
+              }}
+            />
           ))}
         </div>
       </div>
@@ -136,10 +264,13 @@ export default function App() {
   const [newsState, setNewsState] = useState(false);
   const [stats, setStats] = useState(false);
   const [fileBrowser, setFileBrowser] = useState({ open: false, data: null });
-  
-  // NEW: tracks whether the big overlay should be shown (thinking + streaming + speaking)
+
+  // ← DEFAULT TRUE: mic auto-starts on page load
+  const [clapEnabled, setClapEnabled] = useState(true);
+  const [wakeActive, setWakeActive] = useState(false);
+
   const [responseActive, setResponseActive] = useState(false);
-  
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const chatPanelRef = useRef(null);
@@ -151,30 +282,231 @@ export default function App() {
 
   const API_BASE = "http://localhost:3001";
 
-  const { messages, isThinking, model, models, status, setModel, sendMessage, clearChat, checkStatus } = useJarvis();
-  const lastAssistant = messages.filter(m => m.role === "assistant").pop();
+  const {
+    messages,
+    setMessages,
+    isThinking,
+    model,
+    models,
+    status,
+    setModel,
+    sendMessage,
+    clearChat,
+    checkStatus,
+  } = useJarvis();
+  const lastAssistant = messages.filter((m) => m.role === "assistant").pop();
 
   const handleAction = useCallback((action) => {
-    if (action.type === "OPEN_URL") window.open(action.value, "_blank", "noopener,noreferrer");
+    if (action.type === "OPEN_URL")
+      window.open(action.value, "_blank", "noopener,noreferrer");
   }, []);
 
-  const handleSend = useCallback((text, opts = {}) => {
-    const msg = (text || input).trim();
-    if (!msg) return;
-    fetchQueryNews(msg);
-    setInput("");
-    if (opts.fromVoice) voiceTurnRef.current = true;
-    sendMessage(msg);
-  }, [input, sendMessage]);
+  const handleSend = useCallback(
+    (text, opts = {}) => {
+      const msg = (text || input).trim();
+      if (!msg) return;
+      fetchQueryNews(msg);
+      setInput("");
+      if (opts.fromVoice) voiceTurnRef.current = true;
+      sendMessage(msg);
+    },
+    [input, sendMessage],
+  );
 
   const {
-    isListening, isSpeaking, transcript, supported,
-    handsFreeActive, speak, speakQueue, stopSpeaking,
-    startListening, stopListening, toggleHandsFree,
+    isListening,
+    isSpeaking,
+    transcript,
+    supported,
+    handsFreeActive,
+    speak,
+    speakQueue,
+    stopSpeaking,
+    startListening,
+    stopListening,
+    toggleHandsFree,
   } = useVoice({
     onTranscript: (text) => handleSend(text, { fromVoice: true }),
     onEnd: () => {},
   });
+
+  useEffect(() => {
+    if (wakeActive) {
+      toggleHandsFree();
+    }
+  }, [wakeActive]);
+
+  function speakGreeting(text) {
+    if (!window.speechSynthesis) {
+      console.warn("[TTS] Not supported");
+      return;
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // Try to find a good male English voice (Jarvis-like)
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(
+      (v) =>
+        v.name.includes("Microsoft Zira") ||
+        v.name.includes("Samantha") ||
+        v.name.includes("Victoria") ||
+        v.name.includes("Karen") ||
+        v.name.includes("Alex") ||
+        (v.lang === "en-GB" && v.name.includes("Female")) ||
+        (v.lang === "en-US" && v.name.includes("Female")),
+    );
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+      console.log("[TTS] Using voice:", preferredVoice.name);
+    }
+
+    // Jarvis-like settings
+    utterance.rate = 0.9; // Slightly slower, more deliberate
+    utterance.pitch = 0.85; // Slightly deeper
+    utterance.volume = 1.0;
+    utterance.lang = "en-GB"; // British accent like Jarvis
+
+    // Add slight pause at start for dramatic effect
+    utterance.text = " " + text;
+
+    utterance.onstart = () => console.log("[TTS] Speaking:", text);
+    utterance.onend = () => console.log("[TTS] Done");
+    utterance.onerror = (e) => console.error("[TTS] Error:", e);
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // ← DOUBLE CLAP HANDLER: defined BEFORE useClap
+  const handleDoubleClap = useCallback(() => {
+    if (wakeActive) return;
+    console.log("[CLAP] Double clap detected! Waking JARVIS...");
+    setWakeActive(true);
+
+    // Play wake chime (Iron Man style beeps)
+    playJarvisWakeChime();
+
+    // Send greet to backend via WebSocket
+    const ws = new WebSocket("ws://localhost:3001/api/chat/stream");
+
+    ws.onopen = () => {
+      console.log("[CLAP] WebSocket open, sending greet");
+      ws.send(JSON.stringify({ type: "greet", sessionId: "default" }));
+    };
+
+    ws.onmessage = (e) => {
+      console.log("[CLAP] WebSocket message:", e.data);
+      const data = JSON.parse(e.data);
+
+      if (data.type === "greet") {
+        // Add greeting to messages (silent, no TTS here)
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `greet_${Date.now()}`,
+            role: "assistant",
+            content: data.content,
+            actions: [],
+            ts: Date.now(),
+          },
+        ]);
+
+        // Speak with enhanced TTS (THE KEY FIX)
+        speakGreeting(data.content);
+      }
+      ws.close();
+    };
+
+    ws.onerror = (err) => {
+      console.error("[CLAP] WebSocket error:", err);
+    };
+
+    // Focus input after greeting
+    setTimeout(() => inputRef.current?.focus(), 300);
+
+    // Reset wake state after 30s
+    setTimeout(() => setWakeActive(false), 30000);
+  }, [wakeActive, setMessages]);
+
+  function playJarvisWakeChime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+      // First beep - high
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(1200, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.1);
+
+      // Second beep - lower, Jarvis signature
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+      gain2.gain.setValueAtTime(0.2, ctx.currentTime + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc2.start(ctx.currentTime + 0.12);
+      osc2.stop(ctx.currentTime + 0.4);
+
+      // Subtle background hum
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      osc3.connect(gain3);
+      gain3.connect(ctx.destination);
+      osc3.type = "triangle";
+      osc3.frequency.setValueAtTime(220, ctx.currentTime);
+      gain3.gain.setValueAtTime(0.03, ctx.currentTime);
+      gain3.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      osc3.start(ctx.currentTime);
+      osc3.stop(ctx.currentTime + 0.6);
+
+      setTimeout(() => ctx.close(), 1000);
+    } catch (e) {
+      console.warn("[CLAP] Wake chime failed:", e);
+    }
+  }
+
+  // ← CLAP DETECTOR: uses the stable handleDoubleClap
+  const {
+    start: startClap,
+    stop: stopClap,
+    listening: isClapListening,
+  } = useClap({
+    onDoubleClap: handleDoubleClap,
+  });
+
+  // ← AUTO-START CLAP ON MOUNT (since clapEnabled is true by default)
+  useEffect(() => {
+    if (clapEnabled && !isClapListening) {
+      startClap();
+    }
+    return () => {
+      if (!clapEnabled) stopClap();
+    };
+  }, [clapEnabled, startClap, stopClap, isClapListening]);
+
+  // ← BUTTON TOGGLE HANDLER
+  const toggleClap = useCallback(() => {
+    if (isClapListening) {
+      stopClap();
+      setClapEnabled(false);
+    } else {
+      startClap();
+      setClapEnabled(true);
+    }
+  }, [isClapListening, startClap, stopClap]);
 
   const fetchTrendingNews = async () => {
     const result = await fetch(`${API_BASE}/api/trending-news`);
@@ -191,7 +523,9 @@ export default function App() {
   const fetchCityFromIp = async () => {
     const response = await fetch("https://ipinfo.io/json");
     const data = await response.json();
-    const result = await fetch(`${API_BASE}/api/get-weather-details/${data.city}`);
+    const result = await fetch(
+      `${API_BASE}/api/get-weather-details/${data.city}`,
+    );
     const weather = await result.json();
     setWeatherState(weather);
   };
@@ -211,7 +545,9 @@ export default function App() {
     }
   }, [lastAssistant]);
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   useEffect(() => {
     const last = messages[messages.length - 1];
@@ -219,7 +555,8 @@ export default function App() {
     if (processedActionsRef.current.has(last.id)) return;
     processedActionsRef.current.add(last.id);
     for (const action of last.actions) {
-      if (action.type === "OPEN_URL") window.open(action.value, "_blank", "noopener,noreferrer");
+      if (action.type === "OPEN_URL")
+        window.open(action.value, "_blank", "noopener,noreferrer");
     }
   }, [messages]);
 
@@ -232,22 +569,26 @@ export default function App() {
     }
   }, [lastAssistant]);
 
-  useEffect(() => { fetchCityFromIp(); }, []);
+  useEffect(() => {
+    fetchCityFromIp();
+  }, []);
 
   // ── NEW: lock overlay during the entire response lifecycle ──
   useEffect(() => {
     const lastMsg = messages[messages.length - 1];
-    const isAssistantResponding = lastMsg?.role === "assistant" && (lastMsg?.streaming || isSpeaking);
+    const isAssistantResponding =
+      lastMsg?.role === "assistant" && (lastMsg?.streaming || isSpeaking);
     const shouldShow = isThinking || isAssistantResponding;
 
     if (shouldShow) {
       if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       setResponseActive(true);
     } else if (responseActive) {
-      // 900ms grace period so it never flickers between streaming end and TTS start
       overlayTimerRef.current = setTimeout(() => {
         const stillLast = messages[messages.length - 1];
-        const stillActive = stillLast?.role === "assistant" && (stillLast?.streaming || isSpeaking);
+        const stillActive =
+          stillLast?.role === "assistant" &&
+          (stillLast?.streaming || isSpeaking);
         if (!isThinking && !stillActive) setResponseActive(false);
       }, 900);
     }
@@ -269,7 +610,9 @@ export default function App() {
       ttsBufferRef.current += newText;
       lastSpokenLenRef.current = last.content.length;
       const sentenceRegex = /[^.!?]*[.!?]+(?:\s+|\n|$)/g;
-      let m, sentences = [], lastMatchEnd = 0;
+      let m,
+        sentences = [],
+        lastMatchEnd = 0;
       while ((m = sentenceRegex.exec(ttsBufferRef.current)) !== null) {
         sentences.push(m[0].trim());
         lastMatchEnd = sentenceRegex.lastIndex;
@@ -277,12 +620,18 @@ export default function App() {
       if (sentences.length) {
         ttsBufferRef.current = ttsBufferRef.current.slice(lastMatchEnd);
         for (const s of sentences) {
-          const clean = s.replace(/\[ACTION:[^\]]+\]/g, "").replace(/[#*`_~]/g, "").trim();
+          const clean = s
+            .replace(/\[ACTION:[^\]]+\]/g, "")
+            .replace(/[#*`_~]/g, "")
+            .trim();
           if (clean.length > 2) speakQueue(clean);
         }
       }
     } else {
-      const remaining = ttsBufferRef.current.replace(/\[ACTION:[^\]]+\]/g, "").replace(/[#*`_~]/g, "").trim();
+      const remaining = ttsBufferRef.current
+        .replace(/\[ACTION:[^\]]+\]/g, "")
+        .replace(/[#*`_~]/g, "")
+        .trim();
       if (remaining.length > 2) speakQueue(remaining);
       ttsBufferRef.current = "";
       lastSpokenLenRef.current = 0;
@@ -290,142 +639,352 @@ export default function App() {
     }
   }, [messages, autoSpeak, speak, speakQueue]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  useEffect(() => { fetchTrendingNews(); }, []);
+  useEffect(() => {
+    fetchTrendingNews();
+  }, []);
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--bg-void)", position: "relative", overflow: "hidden" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        background: "var(--bg-void)",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
       <ScanLine />
       <GridBg />
       <HexDecoration />
 
       {/* Central background Arc Reactor */}
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 0, opacity: isThinking || isSpeaking ? 0.08 : 0.04, transition: "opacity 1s" }}>
-        <ArcReactor size={320} active={isThinking || isSpeaking} listening={isListening} speaking={isSpeaking} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
+          zIndex: 0,
+          opacity: isThinking || isSpeaking ? 0.08 : 0.04,
+          transition: "opacity 1s",
+        }}
+      >
+        <ArcReactor
+          size={320}
+          active={isThinking || isSpeaking}
+          listening={isListening}
+          speaking={isSpeaking}
+        />
       </div>
 
       {/* ── Header ── */}
-      <header style={{
-        display: "flex", alignItems: "center", gap: "16px",
-        padding: "10px 24px",
-        background: "rgba(2,4,8,0.85)",
-        borderBottom: "1px solid var(--border)",
-        backdropFilter: "blur(12px)",
-        position: "relative", zIndex: 10, flexShrink: 0,
-      }}>
-        <ArcReactor size={40} active={isThinking || isSpeaking} listening={isListening} speaking={isSpeaking} />
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "16px",
+          padding: "10px 24px",
+          background: "rgba(2,4,8,0.85)",
+          borderBottom: "1px solid var(--border)",
+          backdropFilter: "blur(12px)",
+          position: "relative",
+          zIndex: 10,
+          flexShrink: 0,
+        }}
+      >
+        <ArcReactor
+          size={40}
+          active={isThinking || isSpeaking}
+          listening={isListening}
+          speaking={isSpeaking}
+        />
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "16px", letterSpacing: "0.3em", color: "var(--arc-primary)", lineHeight: 1, textShadow: "0 0 20px rgba(0,212,255,0.4)" }}>
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "16px",
+              letterSpacing: "0.3em",
+              color: "var(--arc-primary)",
+              lineHeight: 1,
+              textShadow: "0 0 20px rgba(0,212,255,0.4)",
+            }}
+          >
             J.A.R.V.I.S
           </h1>
-          <p style={{ fontSize: "9px", fontFamily: "var(--font-mono)", color: "var(--arc-dim)", letterSpacing: "0.2em", marginTop: "3px" }}>
+          <p
+            style={{
+              fontSize: "9px",
+              fontFamily: "var(--font-mono)",
+              color: "var(--arc-dim)",
+              letterSpacing: "0.2em",
+              marginTop: "3px",
+            }}
+          >
             JUST A RATHER VERY INTELLIGENT SYSTEM
           </p>
         </div>
 
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px" }}>
+        <div
+          style={{
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          {/* ← CLAP BUTTON */}
+          <button
+            onClick={toggleClap}
+            style={{
+              padding: "5px 10px",
+              borderRadius: "2px",
+              border: `1px solid ${isClapListening ? "rgba(255,209,102,0.4)" : "var(--border)"}`,
+              background: isClapListening
+                ? "rgba(255,209,102,0.08)"
+                : "transparent",
+              color: isClapListening ? "var(--gold)" : "var(--text-dim)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "10px",
+              cursor: "pointer",
+              letterSpacing: "0.1em",
+              transition: "all 0.2s",
+            }}
+          >
+            {isClapListening ? "👏 LISTENING" : "👏 CLAP: OFF"}
+          </button>
+
           {supported.stt && (
-            <button onClick={toggleHandsFree} style={{
-              padding: "5px 12px", borderRadius: "2px",
-              border: `1px solid ${handsFreeActive ? "var(--arc-primary)" : "var(--border)"}`,
-              background: handsFreeActive ? "rgba(0,212,255,0.1)" : "transparent",
-              color: handsFreeActive ? "var(--arc-primary)" : "var(--text-dim)",
-              fontFamily: "var(--font-mono)", fontSize: "10px", cursor: "pointer",
-              letterSpacing: "0.1em", transition: "all 0.2s",
-            }}>
+            <button
+              onClick={toggleHandsFree}
+              style={{
+                padding: "5px 12px",
+                borderRadius: "2px",
+                border: `1px solid ${handsFreeActive ? "var(--arc-primary)" : "var(--border)"}`,
+                background: handsFreeActive
+                  ? "rgba(0,212,255,0.1)"
+                  : "transparent",
+                color: handsFreeActive
+                  ? "var(--arc-primary)"
+                  : "var(--text-dim)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                cursor: "pointer",
+                letterSpacing: "0.1em",
+                transition: "all 0.2s",
+              }}
+            >
               {handsFreeActive ? "● HANDS-FREE" : "HANDS-FREE"}
             </button>
           )}
+
           {supported.tts && (
-            <button onClick={() => setAutoSpeak(v => !v)} style={{
-              padding: "5px 10px", borderRadius: "2px",
-              border: `1px solid ${autoSpeak ? "var(--arc-primary)" : "var(--border)"}`,
-              background: autoSpeak ? "rgba(0,212,255,0.1)" : "transparent",
-              color: autoSpeak ? "var(--arc-primary)" : "var(--text-dim)",
-              fontFamily: "var(--font-mono)", fontSize: "10px", cursor: "pointer",
-              letterSpacing: "0.1em", transition: "all 0.2s",
-            }}>
+            <button
+              onClick={() => setAutoSpeak((v) => !v)}
+              style={{
+                padding: "5px 10px",
+                borderRadius: "2px",
+                border: `1px solid ${autoSpeak ? "var(--arc-primary)" : "var(--border)"}`,
+                background: autoSpeak ? "rgba(0,212,255,0.1)" : "transparent",
+                color: autoSpeak ? "var(--arc-primary)" : "var(--text-dim)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                cursor: "pointer",
+                letterSpacing: "0.1em",
+                transition: "all 0.2s",
+              }}
+            >
               {autoSpeak ? "TTS: ON" : "TTS: OFF"}
             </button>
           )}
-          <button onClick={clearChat} style={{
-            background: "none", border: "1px solid var(--border)", borderRadius: "2px",
-            color: "var(--text-dim)", cursor: "pointer", padding: "5px 8px",
-            display: "flex", alignItems: "center", gap: "5px",
-            fontFamily: "var(--font-mono)", fontSize: "10px", transition: "all 0.2s",
-          }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--red-alert)"; e.currentTarget.style.borderColor = "var(--red-alert)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-dim)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+
+          <button
+            onClick={clearChat}
+            style={{
+              background: "none",
+              border: "1px solid var(--border)",
+              borderRadius: "2px",
+              color: "var(--text-dim)",
+              cursor: "pointer",
+              padding: "5px 8px",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              fontFamily: "var(--font-mono)",
+              fontSize: "10px",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--red-alert)";
+              e.currentTarget.style.borderColor = "var(--red-alert)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--text-dim)";
+              e.currentTarget.style.borderColor = "var(--border)";
+            }}
           >
             <Trash2 size={12} /> CLEAR
           </button>
         </div>
       </header>
 
-      <StatusBar status={status} model={model} models={models} onModelChange={setModel} onRefresh={checkStatus} />
+      <StatusBar
+        status={status}
+        model={model}
+        models={models}
+        onModelChange={setModel}
+        onRefresh={checkStatus}
+      />
 
       {/* ── Main Viewport ── */}
-      <main style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative", zIndex: 1 }}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0, position: "relative" }}>
-
-          {/* BIG SPEAKING OVERLAY — stays for entire response (thinking → streaming → speaking) */}
+      <main
+        style={{
+          flex: 1,
+          display: "flex",
+          overflow: "hidden",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            minWidth: 0,
+            position: "relative",
+          }}
+        >
+          {/* BIG SPEAKING OVERLAY */}
           <SpeakingOverlay visible={responseActive} />
 
-          {/* System Log — hidden while overlay is active */}
-          <div ref={chatPanelRef} style={{
-            flex: 1,
-            overflowY: "auto",
-            paddingTop: "16px",
-            paddingBottom: "8px",
-            opacity: responseActive ? 0 : 1,
-            transition: "opacity 0.4s ease 0.05s",
-            pointerEvents: responseActive ? "none" : "auto",
-          }}>
-            {/* Welcome header in log */}
+          {/* System Log */}
+          <div
+            ref={chatPanelRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              paddingTop: "16px",
+              paddingBottom: "8px",
+              opacity: responseActive ? 0 : 1,
+              transition: "opacity 0.4s ease 0.05s",
+              pointerEvents: responseActive ? "none" : "auto",
+            }}
+          >
+            {/* Welcome header */}
             {messages.length <= 1 && (
-              <div style={{ padding: "0 24px 20px", borderBottom: "1px solid var(--border)", marginBottom: "16px" }}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: "11px", color: "var(--arc-primary)", letterSpacing: "0.2em", marginBottom: "8px" }}>
+              <div
+                style={{
+                  padding: "0 24px 20px",
+                  borderBottom: "1px solid var(--border)",
+                  marginBottom: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "11px",
+                    color: "var(--arc-primary)",
+                    letterSpacing: "0.2em",
+                    marginBottom: "8px",
+                  }}
+                >
                   SYSTEM INITIALIZED
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.8 }}>
-                  <span style={{ color: "var(--arc-dim)" }}>STATUS:</span> ONLINE<br />
-                  <span style={{ color: "var(--arc-dim)" }}>MODEL:</span> {model}<br />
-                  <span style={{ color: "var(--arc-dim)" }}>VOICE:</span> {supported.tts ? "ENABLED" : "DISABLED"}<br />
-                  <span style={{ color: "var(--arc-dim)" }}>STT:</span> {supported.stt ? "ENABLED" : "DISABLED"}
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "12px",
+                    color: "var(--text-secondary)",
+                    lineHeight: 1.8,
+                  }}
+                >
+                  <span style={{ color: "var(--arc-dim)" }}>STATUS:</span>{" "}
+                  ONLINE
+                  <br />
+                  <span style={{ color: "var(--arc-dim)" }}>MODEL:</span>{" "}
+                  {model}
+                  <br />
+                  <span style={{ color: "var(--arc-dim)" }}>VOICE:</span>{" "}
+                  {supported.tts ? "ENABLED" : "DISABLED"}
+                  <br />
+                  <span style={{ color: "var(--arc-dim)" }}>STT:</span>{" "}
+                  {supported.stt ? "ENABLED" : "DISABLED"}
                 </div>
               </div>
             )}
 
             {messages.map((msg) => (
-              <ChatMessage key={msg.id} msg={msg} onSpeak={supported.tts ? speak : null} onAction={handleAction} />
+              <ChatMessage
+                key={msg.id}
+                msg={msg}
+                onSpeak={supported.tts ? speak : null}
+                onAction={handleAction}
+              />
             ))}
 
-            {/* Suggestions as terminal commands */}
+            {/* Suggestions */}
             {messages.length === 1 && (
               <div style={{ padding: "12px 24px", marginTop: "8px" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--arc-dim)", letterSpacing: "0.15em", marginBottom: "10px" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "10px",
+                    color: "var(--arc-dim)",
+                    letterSpacing: "0.15em",
+                    marginBottom: "10px",
+                  }}
+                >
                   // AVAILABLE PROTOCOLS
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                  }}
+                >
                   {[
                     "Open wikipedia.org and summarize it",
                     "Search for latest AI news",
                     "What can you do?",
                     "Open github.com",
                   ].map((p, i) => (
-                    <div key={i} onClick={() => handleSend(p)} style={{
-                      cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "12px",
-                      color: "var(--text-dim)", transition: "color 0.2s",
-                    }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = "var(--arc-primary)"}
-                      onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-dim)"}
+                    <div
+                      key={i}
+                      onClick={() => handleSend(p)}
+                      style={{
+                        cursor: "pointer",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "12px",
+                        color: "var(--text-dim)",
+                        transition: "color 0.2s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.color = "var(--arc-primary)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color = "var(--text-dim)")
+                      }
                     >
-                      <span style={{ color: "var(--arc-dim)" }}>{`[CMD_${String(i + 1).padStart(2, "0")}]`}</span> {p}
+                      <span
+                        style={{ color: "var(--arc-dim)" }}
+                      >{`[CMD_${String(i + 1).padStart(2, "0")}]`}</span>{" "}
+                      {p}
                     </div>
                   ))}
                 </div>
@@ -436,31 +995,57 @@ export default function App() {
           </div>
 
           {/* ── Terminal Input ── */}
-          <div style={{
-            borderTop: "1px solid var(--border)",
-            background: "rgba(2,4,8,0.92)",
-            backdropFilter: "blur(16px)",
-            position: "relative",
-            flexShrink: 0,
-          }}>
-            <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, var(--arc-primary), transparent)", opacity: 0.3 }} />
+          <div
+            style={{
+              borderTop: "1px solid var(--border)",
+              background: "rgba(2,4,8,0.92)",
+              backdropFilter: "blur(16px)",
+              position: "relative",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                height: "1px",
+                background:
+                  "linear-gradient(90deg, transparent, var(--arc-primary), transparent)",
+                opacity: 0.3,
+              }}
+            />
 
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", padding: "14px 24px" }}>
-              <span style={{
-                color: "var(--arc-primary)",
-                fontFamily: "var(--font-mono)",
-                fontSize: "16px",
-                paddingBottom: "10px",
-                textShadow: "0 0 10px var(--arc-primary)",
-                flexShrink: 0,
-              }}>❯</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: "12px",
+                padding: "14px 24px",
+              }}
+            >
+              <span
+                style={{
+                  color: "var(--arc-primary)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "16px",
+                  paddingBottom: "10px",
+                  textShadow: "0 0 10px var(--arc-primary)",
+                  flexShrink: 0,
+                }}
+              >
+                ❯
+              </span>
 
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isListening ? "Listening..." : handsFreeActive ? "Hands-free active. Speak or type command..." : "Enter command..."}
+                placeholder={
+                  isListening
+                    ? "Listening..."
+                    : handsFreeActive
+                      ? "Hands-free active. Speak or type command..."
+                      : "Enter command..."
+                }
                 rows={1}
                 style={{
                   flex: responseActive ? "0 0 0" : 1,
@@ -481,31 +1066,66 @@ export default function App() {
                 disabled={isListening || responseActive}
               />
 
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingBottom: "4px", flex: responseActive ? 1 : "none", minWidth: 0 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  paddingBottom: "4px",
+                  flex: responseActive ? 1 : "none",
+                  minWidth: 0,
+                }}
+              >
                 <VoiceButton
-                  isListening={isListening} isSpeaking={isSpeaking}
-                  transcript={transcript} onStart={startListening}
-                  onStop={stopListening} onStopSpeaking={stopSpeaking} supported={supported}
+                  isListening={isListening}
+                  isSpeaking={isSpeaking}
+                  transcript={transcript}
+                  onStart={startListening}
+                  onStop={stopListening}
+                  onStopSpeaking={stopSpeaking}
+                  supported={supported}
                 />
                 {!responseActive && (
                   <button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || isThinking}
                     style={{
-                      background: input.trim() && !isThinking ? "rgba(0,212,255,0.12)" : "transparent",
+                      background:
+                        input.trim() && !isThinking
+                          ? "rgba(0,212,255,0.12)"
+                          : "transparent",
                       border: `1px solid ${input.trim() && !isThinking ? "var(--arc-primary)" : "var(--border)"}`,
                       borderRadius: "2px",
-                      color: input.trim() && !isThinking ? "var(--arc-primary)" : "var(--text-dim)",
-                      cursor: input.trim() && !isThinking ? "pointer" : "not-allowed",
+                      color:
+                        input.trim() && !isThinking
+                          ? "var(--arc-primary)"
+                          : "var(--text-dim)",
+                      cursor:
+                        input.trim() && !isThinking ? "pointer" : "not-allowed",
                       padding: "7px 14px",
-                      display: "flex", alignItems: "center", gap: "6px",
-                      fontFamily: "var(--font-mono)", fontSize: "10px",
-                      letterSpacing: "0.15em", transition: "all 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "10px",
+                      letterSpacing: "0.15em",
+                      transition: "all 0.2s",
                     }}
                   >
                     {isThinking ? (
-                      <div style={{ width: 12, height: 12, border: "2px solid var(--arc-dim)", borderTopColor: "var(--arc-primary)", borderRadius: "50%", animation: "rotate 0.8s linear infinite" }} />
-                    ) : <Send size={12} />}
+                      <div
+                        style={{
+                          width: 12,
+                          height: 12,
+                          border: "2px solid var(--arc-dim)",
+                          borderTopColor: "var(--arc-primary)",
+                          borderRadius: "50%",
+                          animation: "rotate 0.8s linear infinite",
+                        }}
+                      />
+                    ) : (
+                      <Send size={12} />
+                    )}
                     EXECUTE
                   </button>
                 )}
@@ -513,7 +1133,11 @@ export default function App() {
             </div>
           </div>
         </div>
-        <JarvisWidgets weatherData={weatherState} newsData={newsState} statsData={stats} />
+        <JarvisWidgets
+          weatherData={weatherState}
+          newsData={newsState}
+          statsData={stats}
+        />
       </main>
       {fileBrowser.open && (
         <FileBrowser

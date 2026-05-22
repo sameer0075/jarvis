@@ -7,14 +7,7 @@ const WS_BASE = "ws://localhost:3001";
 
 export function useJarvis() {
   const [messages, setMessages] = useState([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Good day. I am **JARVIS** — Just A Rather Very Intelligent System.\n\nI'm running locally on your machine via Ollama. I can:\n- **Chat** about anything\n- **Open URLs** and websites on your command\n- **Search** the web for information\n- **Listen** to your voice commands\n\nHow may I assist you today?",
-      actions: [],
-      ts: Date.now(),
-    },
+    { id: "welcome", role: "assistant", content: "System initialized. Awaiting command.", actions: [], ts: Date.now() }
   ]);
   const [isThinking, setIsThinking] = useState(false);
   const [model, setModel] = useState("llama3.2");
@@ -199,5 +192,5 @@ export function useJarvis() {
     ]);
   }, []);
 
-  return { messages, isThinking, model, models, status, setModel, sendMessage, clearChat, checkStatus };
+  return { messages, isThinking, model, models, status, setModel, sendMessage, clearChat, checkStatus,setMessages };
 }
