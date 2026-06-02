@@ -33,7 +33,7 @@ async function routeFileIntent(userMessage) {
       ],
       stream:  false,
       format:  "json",
-      options: { temperature: 0, num_predict: 150 },
+      options: { temperature: 0, num_predict: 150, num_thread: 4, num_ctx: 4096 },
       think: false
     });
 

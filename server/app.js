@@ -4,6 +4,8 @@ const http = require("http");
 const WebSocket = require("ws");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const dns = require("dns")
+dns.setDefaultResultOrder('ipv4first');
 dotenv.config();
 
 const routes = require("./routes/routes");
@@ -13,7 +15,14 @@ const { buildFilesystemIndex } = require("./services/filesystem/indexer");
 const { startFilesystemWatcher } = require("./services/filesystem/watcher");
 const { analyzeLoop } = require("./services/vision/observer");
 
-mongoose.connect(process.env.MONGO_URI).then(() => {
+mongoose.connect(process.env.MONGO_URI, {
+  serverSelectionTimeoutMS: 30000,  // default is 30s, but explicitly set
+  connectTimeoutMS: 20000,          // default is 10s — increase for mobile
+  socketTimeoutMS: 45000,          // keep alive longer
+  heartbeatFrequencyMS: 10000,     // less aggressive health checks
+  retryWrites: true,
+  w: 'majority'
+}).then(() => {
   console.log("MongoDB Connected");
   // (async () => {
   // buildFilesystemIndex()
@@ -79,6 +88,7 @@ function createServer() {
           fullText: result.text,
           widgetData: result.widgetData,
         });
+
       } catch (err) {
         console.error("[WS]", err.message);
         send({ type: "error", error: err.message });

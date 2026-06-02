@@ -5,6 +5,7 @@ const geocoder = NodeGeocoder({
 });
 
 async function getTime(city) {
+  console.log("citycity",city)
   const res = await geocoder.geocode(city);
 
   if (!res.length) return `Unknown city: ${city}`;
