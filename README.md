@@ -1,67 +1,82 @@
-# 🤖 JARVIS — Local AI Assistant
+# 🤖 JARVIS
 
-> Just A Rather Very Intelligent System  
-> Built with Ollama (free, local AI) + Express.js + React
+<div align="center">
+
+### Just A Rather Very Intelligent System
+
+**Local AI Assistant powered by Ollama, Express.js & React**
+
+⚡ Streaming Responses • 🎙️ Voice Control • 🧠 Memory • 🌐 Built-in Browser • 🖐️ Gesture Control
+
+</div>
 
 ---
 
 ## ✨ Features
 
-- 💬 **Chat** — Streaming responses via WebSocket
-- 🎙️ **Voice Input** — Speak commands using Web Speech API
-- 🔊 **Voice Output** — Jarvis reads responses aloud
-- 🌐 **Browser Panel** — Opens URLs/articles inline within the app
-- 🧠 **Memory** — Maintains conversation context per session
-- 🔄 **Model Switching** — Switch between any installed Ollama models
-- ⚡ **Streaming** — Real-time token-by-token streaming responses
+| Feature             | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| 💬 Chat             | Streaming responses via WebSocket                           |
+| 🎙️ Voice Input     | Speak commands using Web Speech API                         |
+| 🔊 Voice Output     | Jarvis reads responses aloud                                |
+| 🌐 Browser Panel    | Opens URLs/articles inline within the app                   |
+| 🧠 Memory           | Maintains conversation context per session                  |
+| 🔄 Model Switching  | Switch between any installed Ollama models                  |
+| ⚡ Streaming         | Real-time token-by-token streaming responses                |
+| 🖐️ Gesture Control | Control your Mac hands-free with gestures & trackpad swipes |
 
 ---
 
 ## 🛠️ Prerequisites
 
-### 1. Install Ollama (free, runs locally)
+### 1️⃣ Install Ollama
 
 ```bash
 # macOS / Linux
 curl -fsSL https://ollama.com/install.sh | sh
 
-# Windows — Download from:
+# Windows
+# Download from:
 # https://ollama.com/download
 ```
 
-### 2. Pull a Model (choose one)
+### 2️⃣ Pull a Model
+
+| Model       | Size   | Notes                  |
+| ----------- | ------ | ---------------------- |
+| qwen3.5:9b  | ~2GB   | ✅ Currently Used       |
+| llama3.2:1b | ~1.3GB | Fast & Lightweight     |
+| llama3.1    | ~4.7GB | More Powerful          |
+| mistral     | ~4.1GB | Great for Conversation |
+| codellama   | ~3.8GB | Code Focused           |
+| phi3        | ~637MB | Very Small & Fast      |
 
 ```bash
-# Recommended — Fast & smart (2GB)
-ollama pull qwen3.5:9b => Currently Used
-
-# Smaller, faster (1.3GB)
-ollama pull llama3.2:1b
-
-# More powerful (4.7GB)
-ollama pull llama3.1
-
-# Mistral — Great for conversation (4.1GB)
-ollama pull mistral
-
-# Code-focused (3.8GB)
-ollama pull codellama
-
-# Very small, very fast (637MB)
-ollama pull phi3
+ollama pull qwen3.5:9b
 ```
 
-### 3. Start Ollama
+### 3️⃣ Start Ollama
 
 ```bash
 ollama serve
-# Runs at http://localhost:11434
 ```
 
-### 4. Node.js 18+
+Runs on:
+
+```text
+http://localhost:11434
+```
+
+### 4️⃣ Install Node.js
 
 ```bash
-node --version  # Should be v18 or higher
+node --version
+```
+
+Requires:
+
+```text
+Node.js v18+
 ```
 
 ---
@@ -69,34 +84,39 @@ node --version  # Should be v18 or higher
 ## 🚀 Installation & Running
 
 ```bash
-# 1. Install all dependencies
+# Install dependencies
 npm run install:all
 
-# 2. Start both server + client
+# Start frontend + backend
 npm run dev
 ```
 
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3001
+### Services
+
+| Service     | URL                   |
+| ----------- | --------------------- |
+| Frontend    | http://localhost:5173 |
+| Backend API | http://localhost:3001 |
 
 ---
 
 ## ⚙️ Configuration
 
-Set environment variables to customize:
+Environment Variables
 
 ```bash
-# Change Ollama URL (default: http://localhost:11434)
+# Ollama Endpoint
 OLLAMA_URL=http://localhost:11434
 
-# Change default model (default: llama3.2)
+# Default Model
 OLLAMA_MODEL=mistral
 
-# Change server port (default: 3001)
+# Backend Port
 PORT=3001
 ```
 
 Example:
+
 ```bash
 OLLAMA_MODEL=mistral npm run dev
 ```
@@ -105,123 +125,160 @@ OLLAMA_MODEL=mistral npm run dev
 
 ## 🗣️ Voice Commands
 
-- Click the **microphone button** or press it to start listening
-- Speak naturally — Jarvis will process your voice command
-- Enable **AUTO-SPEAK** to have Jarvis read responses aloud
-- Click the speaker button to stop Jarvis from talking
+### Usage
 
-### Voice works best in:
-- Chrome / Edge (full support)
-- Safari (partial support)
-- Firefox (limited support)
+1. Click the microphone button
+2. Speak naturally
+3. Jarvis processes your command
+4. Enable AUTO-SPEAK for spoken responses
+
+### Browser Support
+
+| Browser | Support    |
+| ------- | ---------- |
+| Chrome  | ✅ Full     |
+| Edge    | ✅ Full     |
+| Safari  | ⚠️ Partial |
+| Firefox | ⚠️ Limited |
 
 ---
 
 ## 🌐 Opening URLs
 
-Ask Jarvis to open URLs naturally:
+Examples:
 
-- *"Open github.com"*
-- *"Visit wikipedia.org and tell me about quantum computing"*
-- *"Search for latest news about AI"*
-- *"Show me the React documentation"*
+```text
+Open github.com
 
-Jarvis will open a split browser panel inside the app!
+Visit wikipedia.org and tell me about quantum computing
+
+Search for latest news about AI
+
+Show me the React documentation
+```
+
+Jarvis automatically opens content inside the built-in browser panel.
 
 ---
 
 ## 📡 API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/status` | Ollama connection status |
-| GET | `/api/models` | List installed models |
-| POST | `/api/chat` | Send message (non-streaming) |
-| WS | `/api/chat/stream` | Send message (streaming WebSocket) |
-| POST | `/api/clear` | Clear conversation memory |
+| Method | Endpoint         | Description                  |
+| ------ | ---------------- | ---------------------------- |
+| GET    | /api/status      | Ollama connection status     |
+| GET    | /api/models      | List installed models        |
+| POST   | /api/chat        | Send message (non-streaming) |
+| WS     | /api/chat/stream | Streaming chat               |
+| POST   | /api/clear       | Clear conversation memory    |
 
 ---
 
-## 🔧 Troubleshooting
+## 📡 News & Weather
 
-**Ollama offline?**
-```bash
-# Make sure Ollama is running
-ollama serve
+✅ Shows latest news
 
-# Check it's accessible
-curl http://localhost:11434/api/tags
-```
-
-**No models listed?**
-```bash
-ollama pull llama3.2
-```
-
-**Voice not working?**
-- Use Chrome or Edge
-- Allow microphone permissions
-- Voice recognition requires internet for the Web Speech API
-
-**Site won't load in browser panel?**
-- Some sites block iframe embedding (X-Frame-Options)
-- Use the "Open in new tab" button in the browser panel toolbar
+✅ Provides weather information
 
 ---
 
-## 🧠 How Actions Work
+## 🧠 Currently Tested on macOS
 
-Jarvis parses special action tags from the AI response:
+### System Controls
 
-- `[ACTION:OPEN_URL:https://example.com]` → Opens URL in browser panel
-- `[ACTION:SEARCH:query]` → Google search in browser panel
+| Feature                  | Status |
+| ------------------------ | ------ |
+| Force Quit               | ✅      |
+| WiFi On / Off            | ✅      |
+| Bluetooth On / Off       | ✅      |
+| Clipboard Copy / Paste   | ✅      |
+| New / Close Tab          | ✅      |
+| New / Close Window       | ✅      |
+| Zoom In / Out            | ✅      |
+| Open Folder              | ✅      |
+| Get Battery              | ✅      |
+| Get Volume               | ✅      |
+| Microphone Mute / Unmute | ✅      |
+| Lock Screen              | ✅      |
+| Screenshot               | ✅      |
+| Screen Recording         | ✅      |
+| Stop Recording           | ✅      |
 
-The system prompt instructs the model to emit these when relevant.
+### Pending / Untested
 
-## 📡 Shows Latest News and Weather Details
+| Feature         | Status        |
+| --------------- | ------------- |
+| Minimize Window | 🚧 TODO       |
+| Maximize Window | 🚧 TODO       |
+| Search YouTube  | 🚧 TODO       |
+| Get Brightness  | 🚧 TODO       |
+| Next Track      | 🧪 Not Tested |
+| Previous Track  | 🧪 Not Tested |
+| Play / Pause    | 🧪 Not Tested |
 
-## 🧠 Currently Tested on Mac Only
-- System Control
-    - minimize_window      → TODO
-    - maximize_window      → TODO
-    - force_quit           
+### File System
 
-    - next_track           → NOT TESTED
-    - previous_track       → NOT TESTED
-    - play_pause           → NOT TESTED
+✅ Search and display parent-level files & folders
 
-    - wifi_on              
-    - wifi_off             
-    - bluetooth_on         
-    - bluetooth_off        
+---
 
-    - clipboard_copy       
-    - clipboard_paste      
+# 🖐️ Gesture Control
 
-    - new_tab              
-    - close_tab            
-    - new_window           
-    - close_window         
+Control your Mac without touching the keyboard or mouse.
 
-    - zoom_in              
-    - zoom_out             
+### Setup
 
-    - search_google        
-    - search_youtube       TODO
+Install dependencies:
 
-    - open_folder          
+```bash
+cd gesture
 
-    - get_battery          
-    - get_volume           
-    - get_brightness       TODO
+pip3 install opencv-python mediapipe pyautogui pynput requests
 
-    - microphone_mute      
-    - microphone_unmute    
+# Optional
+pip3 install pyobjc-framework-Quartz pyobjc-framework-CoreFoundation
+```
 
-    - lock_screen
+Grant Accessibility Permissions:
 
-    - take_screenshot
-    - record_screen
-    - stop_recording
-- FileSystem
-    - Search and Display Parent Level Files & Folders.
+```text
+System Settings
+→ Privacy & Security
+→ Accessibility
+
+Add:
+• Terminal
+• VS Code
+• Cursor
+```
+
+### Gesture Reference
+
+| Gesture        | Mode    | Action                       |
+| -------------- | ------- | ---------------------------- |
+| ☝️ Point       | Mouse   | Move Cursor                  |
+| 🤏 Pinch       | Mouse   | Click / Double Click         |
+| ✌️ Peace       | Mouse   | Scroll                       |
+| 🖐️ Open Palm  | Both    | Exit Mouse Mode / Switch Tab |
+| ✊ Fist Swipe (left/right)   | Command | Switch macOS Space           |
+| 🖐️ Palm Swipe (left/right) | Command | Switch Browser Tab           |
+
+### How It Works
+
+**Command Mode**
+
+* Default mode
+* Triggers shortcuts
+
+**Mouse Mode**
+
+* Hold ☝️ Point for ~0.5 seconds
+
+**Exit Mouse Mode**
+
+* Show 🖐️ Open Palm
+
+**Trackpad Gestures**
+
+* Two-finger swipe switches spaces
+
+> 💡 Everything runs locally. Webcam processing stays on-device and no video leaves your machine.
