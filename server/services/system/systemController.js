@@ -500,13 +500,38 @@ async function executeAction(action) {
       }
 
       return "Stopped recording";
+    
+    case "next_tab":
+      robot.keyTap("tab", ["control"]);
+      return "Next tab";
+
+    case "previous_tab":
+      robot.keyTap("tab", ["control", "shift"]);
+      return "Previous tab";
+
+    // ── App switching ─────────────────────────────────────────────────────────
+    case "next_app":
+      if (os.platform() === "darwin") {
+        robot.keyTap("tab", ["command"]);
+      } else {
+        robot.keyTap("tab", ["alt"]); // Win/Linux
+      }
+      return "Next app";
+
+    case "previous_app":
+      if (os.platform() === "darwin") {
+        robot.keyTap("tab", ["command", "shift"]);
+      } else {
+        robot.keyTap("tab", ["alt", "shift"]);
+      }
+      return "Previous app";
 
     default:
       return `Unknown action: ${action.type}`;
   }
 }
 
-module.exports = { systemController };
+module.exports = { systemController, executeAction };
 
 /* 
   TODO-FIXES

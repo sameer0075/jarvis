@@ -8,6 +8,7 @@ import { useJarvis } from "./hooks/useJarvis.js";
 import { useVoice } from "./hooks/useVoice.js";
 import JarvisWidgets from "./components/JarvisWidgets.jsx";
 import FileBrowser from "./components/FileBrowser.jsx";
+import VisionStatus from "./components/VisionStatus.jsx";
 
 const GridBg = () => (
   <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.04, pointerEvents: "none" }} preserveAspectRatio="none">
@@ -327,6 +328,8 @@ export default function App() {
             JUST A RATHER VERY INTELLIGENT SYSTEM
           </p>
         </div>
+
+        <VisionStatus />
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px" }}>
           {supported.stt && (

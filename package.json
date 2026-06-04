@@ -4,12 +4,19 @@
   "description": "Jarvis AI Assistant with Chat, Voice & URL Browser",
   "scripts": {
     "install:all": "npm install && cd client && npm install",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run gesture\"",
     "server": "nodemon server/index.js",
     "client": "cd client && npm run dev",
+    "gesture": "cd /Users/sameerbutt/Downloads/jarvis_fixed_latest/gesture && /Applications/Xcode.app/Contents/Developer/usr/bin/python3 gesture_service.py",
     "start": "npm run dev"
   },
   "dependencies": {
+    "@mediapipe/hands": "^0.4.1675469240",
+    "@mediapipe/tasks-vision": "^0.10.35",
+    "@tensorflow-models/hand-pose-detection": "^2.0.1",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-backend-webgl": "^4.22.0",
+    "@tensorflow/tfjs-core": "^4.22.0",
     "active-win": "^8.2.1",
     "chokidar": "^4.0.3",
     "clipboardy": "^4.0.0",

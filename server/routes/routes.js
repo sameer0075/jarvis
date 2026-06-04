@@ -8,6 +8,7 @@ const { fetchWeatherDetails } = require("../services/tools/weather");
 const { getSystemStats } = require("../services/tools/system-info");
 const { listDirectory, openFile, searchFiles } = require("../services/tools/filesystem");
 const { semanticSearch } = require("../services/filesystem/semantic");
+const { executeAction } = require("../services/system/systemController");
 
 const router = Router();
 
@@ -121,6 +122,19 @@ router.post("/fs/smart-open", async (req, res) => {
   if (!query) return res.status(400).json({ error: "query required" });
   const result = await semanticSearch(`open ${query} in ${searchDir}`);
   res.json(result);
+});
+
+router.post("/gesture", async (req, res) => {
+  const { type, value, target } = req.body;
+  if (!type) return res.status(400).json({ error: "type required" });
+
+  try {
+    const result = await executeAction({ type, value, target });
+    res.json({ success: true, result });
+  } catch (err) {
+    console.error("[GESTURE]", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
