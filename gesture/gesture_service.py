@@ -954,7 +954,8 @@ class TrackpadListener:
                 if etype == Quartz.kCGEventScrollWheel:
                     phase = Quartz.CGEventGetIntegerValueField(event, _SW_SCROLL_PHASE)
                     if phase == 0:
-                        return event
+                        return event  # let normal scroll through
+
                     dx = Quartz.CGEventGetIntegerValueField(event, _SW_PT_DELTA_AXIS1)
                     dy = Quartz.CGEventGetIntegerValueField(event, _SW_PT_DELTA_AXIS2)
 
@@ -963,21 +964,30 @@ class TrackpadListener:
                         cls._v_delta = 0
                         cls._active = True
                         cls._suppress = False
-                        return None
+                        return None  # suppress the began event (prevents initial scroll jump)
+
                     elif phase == _PH_CHANGED and cls._active:
                         cls._h_delta += dx
                         cls._v_delta += dy
+                        # Only mark for suppression if we're actually going horizontal
                         if abs(cls._h_delta) >= H_SUPPRESS_DIST and abs(cls._v_delta) < abs(cls._h_delta) * 0.6:
                             cls._suppress = True
+                            return None  # suppress — this is a gesture swipe
+                        # Otherwise let the scroll through (normal vertical scrolling)
                         return event
+
                     elif phase == _PH_ENDED and cls._active:
                         cls._active = False
-                        cls._check_swipe()
-                        if cls._suppress:
+                        fired = cls._check_swipe()  # returns True if swipe actually fired
+                        # Only suppress if we actually consumed the gesture
+                        if cls._suppress or fired:
                             return None
+                        return event  # let it through if it was just a normal scroll
+
                     elif phase == _PH_MAY_BEGIN:
                         cls._active = False
                         cls._suppress = False
+
                 elif etype in (kCGEventGesture, kCGEventSwipe):
                     dx = Quartz.CGEventGetIntegerValueField(event, _SW_PT_DELTA_AXIS1)
                     dy = Quartz.CGEventGetIntegerValueField(event, _SW_PT_DELTA_AXIS2)
@@ -987,36 +997,6 @@ class TrackpadListener:
             except Exception:
                 pass
             return event
-
-        tap = Quartz.CGEventTapCreate(
-            Quartz.kCGHIDEventTap,
-            Quartz.kCGHeadInsertEventTap,
-            Quartz.kCGEventTapOptionDefault,
-            mask,
-            handler,
-            None,
-        )
-        if not tap:
-            tap = Quartz.CGEventTapCreate(
-                Quartz.kCGAnnotatedSessionEventTap,
-                Quartz.kCGHeadInsertEventTap,
-                Quartz.kCGEventTapOptionDefault,
-                mask,
-                handler,
-                None,
-            )
-        if not tap:
-            print("[TOUCHPAD] Event tap failed. Grant Accessibility & restart Terminal.")
-            return
-
-        print("[TOUCHPAD] Listener active (Quartz)")
-        Quartz.CGEventTapEnable(tap, True)
-        src = CoreFoundation.CFMachPortCreateRunLoopSource(None, tap, 0)
-        rl = CoreFoundation.CFRunLoopGetCurrent()
-        CoreFoundation.CFRunLoopAddSource(rl, src, CoreFoundation.kCFRunLoopDefaultMode)
-        while True:
-            CoreFoundation.CFRunLoopRunInMode(CoreFoundation.kCFRunLoopDefaultMode, 0.2, False)
-            time.sleep(0.01)
 
     @classmethod
     def _run_pynput(cls):
