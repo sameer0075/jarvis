@@ -1,7 +1,7 @@
 const ollama       = require("./ollama");
 const { orchestrate } = require("./agents/orchestrator");
 const { runAgents }   = require("./agents/agents");
-const { DEFAULT_MODEL, LLM_OPTIONS } = require("../utils/config");
+const { LLM_OPTIONS, HEAVY_TRIGGERS, MODELS } = require("../utils/config");
 
 
 const STATUS_SEQUENCES = {
@@ -120,47 +120,58 @@ function mergeWidgetData(agentResults) {
   return widgetData;
 }
 
+function pickModel(userMessage, agents) {
+  const msg = userMessage.toLowerCase();
+  const needsHeavy = (HEAVY_TRIGGERS || []).some(t => msg.includes(t));
+  const hasToolAgents = agents.some(a => !["chat", "system"].includes(a));
+
+  if (needsHeavy)     return MODELS.HEAVY;
+  if (hasToolAgents)  return MODELS.TOOLS;
+  return MODELS.CHAT;
+}
+
 async function runChat(messages, model, stream = false, onChunk = null, onPreResponse = null) {
-  const modelName = model || DEFAULT_MODEL;
   const lastUser  = messages.findLast(m => m.role === "user");
   const userText  = lastUser?.content || "";
   const history   = messages.filter(m => m.role !== "user" || m !== lastUser);
 
   // 1. Orchestrate — decide which agents to run
   const agents = await orchestrate(userText);
+  const runningModal = pickModel(userText, agents);
+  console.log("pickmodal",runningModal)
   console.log("agents", agents);
 
   // 2. Start status messages EARLY (before agents run) so they display
   //    during both agent execution and LLM startup.
   let stopStatus = () => {};
   let hasStartedStreaming = false;
-  const shouldStopStatus = () => hasStartedStreaming;
+  // const shouldStopStatus = () => hasStartedStreaming;
 
-  const agentType = agents[0] || "default";
-  const sequenceFns = STATUS_SEQUENCES[agentType] || STATUS_SEQUENCES.default;
+  // const agentType = agents[0] || "default";
+  // const sequenceFns = STATUS_SEQUENCES[agentType] || STATUS_SEQUENCES.default;
 
   // Mutable args: updated after agents finish so later ticks use real data
-  const statusArgs = { agent: agentType };
-  const sequence = sequenceFns.map(fn => () => {
-    // Guard against "undefined" in templates while agents are still running
-    const args = { city: "", query: "", ...statusArgs };
-    return fn(args);
-  });
+  // const statusArgs = { agent: agentType };
+  // const sequence = sequenceFns.map(fn => () => {
+  //   // Guard against "undefined" in templates while agents are still running
+  //   const args = { city: "", query: "", ...statusArgs };
+  //   return fn(args);
+  // });
 
-  if (onPreResponse && sequence.length) {
-    // Send first message immediately
-    onPreResponse(sequence[0]());
+  // if (onPreResponse && sequence.length) {
+  //   // Send first message immediately
+  //   onPreResponse(sequence[0]());
 
-    // Start cycling at index 1, every 10 seconds
-    stopStatus = startStatusInterval(
-      sequence,
-      (msg) => {
-        if (!hasStartedStreaming) onPreResponse(msg);
-      },
-      shouldStopStatus,
-      10000  // 10 seconds as requested
-    );
-  }
+  //   // Start cycling at index 1, every 10 seconds
+  //   stopStatus = startStatusInterval(
+  //     sequence,
+  //     (msg) => {
+  //       if (!hasStartedStreaming) onPreResponse(msg);
+  //     },
+  //     shouldStopStatus,
+  //     10000  // 10 seconds as requested
+  //   );
+  // }
 
   // 3. Run agents in parallel
   let agentResults = [];
@@ -169,9 +180,9 @@ async function runChat(messages, model, stream = false, onChunk = null, onPreRes
     console.log("agentResults", agentResults);
 
     // Enrich status args with actual results for subsequent interval ticks
-    if (agentResults[0]) {
-      Object.assign(statusArgs, agentResults[0]);
-    }
+    // if (agentResults[0]) {
+    //   Object.assign(statusArgs, agentResults[0]);
+    // }
   } catch (e) {
     console.error("[AGENTS] Error:", e.message);
   }
@@ -183,9 +194,17 @@ async function runChat(messages, model, stream = false, onChunk = null, onPreRes
   ];
 
   const widgetData = mergeWidgetData(agentResults);
+  const KEEP_ALIVE = {
+    "llama3.1:8b":  -1,
+    "llama3.2:3b": -1,
+    "qwen3:8b":     "3m",
+    "qwen3.5:9b":   "0",
+    "nomic-embed-text": "10m"
+  };
   const ollamaBody = {
-    model:   modelName,
+    model:   runningModal,
     messages: finalMessages,
+    keep_alive: KEEP_ALIVE[runningModal] ?? "5m",
     think:   false,
     stream: true,
     options: LLM_OPTIONS,

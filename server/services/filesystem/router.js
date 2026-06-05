@@ -1,6 +1,4 @@
 const ollama = require("../ollama");
-const { DEFAULT_MODEL } = require("../../utils/config");
-
 const FILE_SYSTEM_PROMPT = `You are a FILE INTELLIGENCE ROUTER for a desktop assistant.
 
 AVAILABLE TOOLS:
@@ -26,14 +24,14 @@ Examples:
 async function routeFileIntent(userMessage) {
   try {
     const data = await ollama.post({
-      model:   DEFAULT_MODEL,
+      model:   'llama3.2:3b',
       messages: [
         { role: "system", content: FILE_SYSTEM_PROMPT },
         { role: "user",   content: userMessage },
       ],
       stream:  false,
       format:  "json",
-      options: { temperature: 0, num_predict: 150, num_thread: 4, num_ctx: 4096 },
+      options: { temperature: 0, num_predict: 150, num_thread: 4, num_ctx: 1024, keep_alive: -1 },
       think: false
     });
 

@@ -44,7 +44,7 @@ async function orchestrate(userMessage) {
       stream:  false,
       format:  "json",
       think:   false,
-      options: { temperature: 0, num_predict: 100, num_thread: 4, num_ctx: 4096 },
+      options: { temperature: 0, num_predict: 100, num_thread: 4, num_ctx: 1024, keep_alive: -1 },
     });
 
     const raw  = (data.message?.content || "").trim();

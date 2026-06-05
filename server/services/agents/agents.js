@@ -54,9 +54,35 @@ async function newsAgent(userMessage) {
 
 async function filesystemAgent(userMessage) {
   const result = await semanticSearch(userMessage);
+
+  let entries = result.entries || [];
+
+  // Drop hidden files
+  entries = entries.filter(e => !e.name.startsWith("."));
+
+  // Normalize — list_dir uses type:"folder", search_files uses isDirectory:true
+  entries = entries.map(e => ({
+    ...e,
+    isDirectory: e.isDirectory ?? (e.type === "folder"),
+  }));
+
+  const msg = userMessage.toLowerCase();
+  if (msg.includes("folder") || msg.includes("director")) {
+    entries = entries.filter(e => e.isDirectory);
+  } else if (msg.includes("file") && !msg.includes("folder")) {
+    entries = entries.filter(e => !e.isDirectory);
+  }
+
+  entries = entries.slice(0, 30);
+
+  const trimmed = result.ok ? {
+    ...result,
+    entries: entries.map(e => ({ name: e.name, icon: e.icon })),
+  } : result;
+
   return {
     agent:      "filesystem",
-    result:     JSON.stringify(result),
+    result:     JSON.stringify(trimmed),
     widgetData: { filesystem: result },
   };
 }
