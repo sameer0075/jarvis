@@ -10,11 +10,11 @@ const MODELS = {
   // Tier 1 — always fast, no GPU pressure
   ORCHESTRATOR:  "llama3.2:3b",      // intent routing (already using this ✓)
   EMBEDDINGS:    "nomic-embed-text",  // semantic search (already using this ✓)
-  SYSTEM:        "phi3:mini",         // system commands — small, fast, accurate enough
+  SYSTEM:        "llama3.2:3b",         // system commands — small, fast, accurate enough
 
   // Tier 2 — everyday chat
   CHAT:          "llama3.1:8b",       // general conversation
-  TOOLS:         "qwen3:8b",          // weather/news/filesystem synthesis
+  TOOLS:         "llama3.2:3b",          // weather/news/filesystem synthesis
 
   // Tier 3 — only when needed
   // HEAVY:         "qwen3.5:9b",        // complex reasoning, long docs, code analysis

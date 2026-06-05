@@ -15,7 +15,6 @@ async function weatherAgent(userMessage) {
   ) || userMessage.match(/weather\s+(?:in\s+)?([A-Za-z\s]+?)(?:\?|$)/i);
 
   const city = extractCity(userMessage);
-  console.log("city",city)
   const result = await fetchWeather(city);
 
   let widgetData = null;
@@ -31,7 +30,6 @@ async function weatherAgent(userMessage) {
 
 async function timeAgent(userMessage) {
   const city = extractCity(userMessage);
-  console.log("city",city)
   const result = await getTime(city);
 
   return {

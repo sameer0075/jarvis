@@ -80,7 +80,7 @@ User request: ${userQuery}
 `;
 
   const res = await ollama.post({
-    model: "phi3:mini",
+    model: "llama3.2:3b",
     keep_alive: '5m',
     messages: [{ role: "user", content: prompt }],
     stream: false,
