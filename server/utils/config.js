@@ -2,7 +2,7 @@ const OLLAMA_CONFIG = {
   OLLAMA_HOST: "127.0.0.1",
   OLLAMA_PORT: 11434,
   DEFAULT_MODEL: process.env.OLLAMA_MODEL || "llama3.1:8b",
-  LLM_OPTIONS: { num_predict: 300, num_ctx: 4096 },
+  LLM_OPTIONS: { num_predict: 200, num_ctx: 4096 },
 };
 
 // utils/config.js — add these
@@ -13,7 +13,7 @@ const MODELS = {
   SYSTEM:        "llama3.2:3b",         // system commands — small, fast, accurate enough
 
   // Tier 2 — everyday chat
-  CHAT:          "llama3.1:8b",       // general conversation
+  CHAT:          "llama3.2:3b",       // general conversation
   TOOLS:         "llama3.2:3b",          // weather/news/filesystem synthesis
 
   // Tier 3 — only when needed

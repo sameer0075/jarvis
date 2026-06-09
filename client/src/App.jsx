@@ -5,6 +5,7 @@ import StatusBar from "./components/StatusBar.jsx";
 import VisionStatus from "./components/VisionStatus.jsx";
 import { useJarvis } from "./hooks/useJarvis.js";
 import { useVoice } from "./hooks/useVoice.js";
+import FileBrowser from "./components/FileBrowser.jsx";
 
 /* ── Background Grid ── */
 const GridBg = () => (
@@ -55,10 +56,11 @@ function VoiceWaveform({ active, color = "#ffd166" }) {
 
 export default function App() {
   const [init, setInit] = useState(false);
+  const [fileBrowser, setFileBrowser] = useState({ open: false, data: null });
   const greetedRef = useRef(false);
 
   const { messages, isThinking, model, models, status, setModel, sendMessage, checkStatus } = useJarvis();
-
+  const lastAssistant = messages.filter(m => m.role === "assistant").pop();
   const {
     isListening, isSpeaking, transcript, supported,
     handsFreeActive, speak, speakQueue, stopSpeaking,
@@ -110,6 +112,16 @@ export default function App() {
       lastSpokenLenRef.current = 0;
     }
   }, [messages, speakQueue]);
+
+  useEffect(() => {
+    console.log("lastAssistant",lastAssistant, lastAssistant?.widgetData?.filesystem)
+    if (lastAssistant?.widgetData?.filesystem) {
+      const fsData = lastAssistant.widgetData.filesystem;
+      if (fsData.ok && fsData.entries?.length > 0) {
+        setFileBrowser({ open: true, data: fsData });
+      }
+    }
+  }, [lastAssistant]);
 
   /* ── Visual state ── */
   const vState = isListening ? "listening" : isSpeaking ? "speaking" : isThinking ? "thinking" : "idle";
@@ -336,6 +348,10 @@ export default function App() {
             </div>
           )}
         </div>
+        {fileBrowser.open && <FileBrowser
+          initialData={fileBrowser.data}
+          onClose={() => setFileBrowser({ open: false, data: null })}
+        />}
       </main>
 
       {/* Bottom hint */}

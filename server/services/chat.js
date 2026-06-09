@@ -122,8 +122,8 @@ function mergeWidgetData(agentResults) {
 
 function pickModel(userMessage, agents) {
   const msg = userMessage.toLowerCase();
-  const needsHeavy = (HEAVY_TRIGGERS || []).some(t => msg.includes(t));
-  const hasToolAgents = agents.some(a => !["chat", "system"].includes(a));
+  const needsHeavy = (HEAVY_TRIGGERS || [])?.some(t => msg.includes(t));
+  const hasToolAgents = agents?.some(a => !["chat", "system"].includes(a));
 
   if (needsHeavy)     return MODELS.HEAVY;
   if (hasToolAgents)  return MODELS.TOOLS;
@@ -178,6 +178,22 @@ async function runChat(messages, model, stream = false, onChunk = null, onPreRes
   try {
     agentResults = await runAgents(agents, userText);
     console.log("agentResults", agentResults);
+    const fsResult = agentResults.find(r => r.agent === "filesystem");
+    try {
+    const parsed = JSON.parse(fsResult.result);
+    if (parsed.type === "list_dir") {
+      const count   = parsed.entries?.length || 0;
+      const dirName = parsed.path?.split("/").pop() || "folder";
+      const reply   = `Here are the contents of your ${dirName} folder — ${count} items found.`;
+      const widgetData = mergeWidgetData(agentResults);
+
+      if (stream && onChunk) {
+        onChunk(reply);
+        return { text: reply, raw: reply, actions: [], widgetData };
+      }
+      return { text: reply, raw: reply, actions: [], widgetData };
+    }
+  } catch {}
 
     // Enrich status args with actual results for subsequent interval ticks
     // if (agentResults[0]) {
@@ -204,11 +220,21 @@ async function runChat(messages, model, stream = false, onChunk = null, onPreRes
   const ollamaBody = {
     model:   runningModal,
     messages: finalMessages,
-    keep_alive: KEEP_ALIVE[runningModal] ?? "5m",
+    keep_alive: KEEP_ALIVE[runningModal] ?? -1,
     think:   false,
     stream: true,
     options: LLM_OPTIONS,
   };
+
+  let num_ctx = agents.every(a => ["chat"].includes(a)) ? 512
+           : agents.some(a => ["filesystem", "news"].includes(a)) ? 4096
+           : 2048
+
+  const num_predict =
+  agents.length === 1 && agents[0] === "chat" ? 150
+  : 250;
+
+  ollamaBody.options = { ...LLM_OPTIONS, num_ctx, num_predict };
 
   // 5. Stream LLM response
   if (stream && onChunk) {

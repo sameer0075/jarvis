@@ -1,5 +1,6 @@
 const ollama = require("../ollama");
 const { DEFAULT_MODEL, LLM_OPTIONS } = require("../../utils/config");
+const { fastRoute } = require("./fastRouter");
 
 const ORCHESTRATOR_PROMPT = `You are an intent router for JARVIS, an AI assistant.
 
@@ -35,6 +36,12 @@ Examples:
 
 async function orchestrate(userMessage) {
   try {
+    const fast = fastRoute(userMessage);
+    console.log("fast route",fast)
+    if (fast) {
+      console.log(`[ORCHESTRATOR] Fast-routed: [${fast.join(", ")}]`);
+      return fast;
+    }
     const data = await ollama.post({
       model:   'llama3.2:3b',
       messages: [

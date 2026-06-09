@@ -51,7 +51,11 @@ async function newsAgent(userMessage) {
 }
 
 async function filesystemAgent(userMessage) {
-  const result = await semanticSearch(userMessage);
+  const msg = userMessage.toLowerCase();
+  const onlyFolders = msg.includes("folder") || msg.includes("director");
+  const onlyFiles = msg.includes("file") && !msg.includes("folder");
+
+  const result = await semanticSearch(userMessage, { onlyFolders, onlyFiles });
 
   let entries = result.entries || [];
 
@@ -64,7 +68,6 @@ async function filesystemAgent(userMessage) {
     isDirectory: e.isDirectory ?? (e.type === "folder"),
   }));
 
-  const msg = userMessage.toLowerCase();
   if (msg.includes("folder") || msg.includes("director")) {
     entries = entries.filter(e => e.isDirectory);
   } else if (msg.includes("file") && !msg.includes("folder")) {
