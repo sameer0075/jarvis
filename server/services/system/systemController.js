@@ -10,7 +10,48 @@ const {
   getCurrentBrightness,
 } = require("./systemDrivers");
 const os = require("os");
+
+function fastParseSystemCommand(userMessage) {
+  const msg = userMessage.toLowerCase();
+
+  const volMatch = msg.match(/(?:set\s+)?volume\s+(?:to\s+)?(\d+)/);
+  if (volMatch) return { actions: [{ type: "set_volume", value: parseInt(volMatch[1]) }] };
+
+  if (/volume\s+up|increase\s+volume|louder/.test(msg))
+    return { actions: [{ type: "volume_up", value: 10 }] };
+  if (/volume\s+down|decrease\s+volume|quieter|lower\s+volume/.test(msg))
+    return { actions: [{ type: "volume_down", value: 10 }] };
+
+  const brightMatch = msg.match(/brightness\s+(?:to\s+)?(\d+)/);
+  if (brightMatch) return { actions: [{ type: "set_brightness", value: parseInt(brightMatch[1]) }] };
+
+  if (/brightness\s+up|increase\s+brightness/.test(msg))
+    return { actions: [{ type: "brightness_up", value: 10 }] };
+  if (/brightness\s+down|decrease\s+brightness|dim/.test(msg))
+    return { actions: [{ type: "brightness_down", value: 10 }] };
+
+  if (/\bmute\b/.test(msg)) return { actions: [{ type: "set_volume", value: 0 }] };
+  if (/lock\s+screen/.test(msg)) return { actions: [{ type: "lock_screen" }] };
+  if (/screenshot/.test(msg)) return { actions: [{ type: "take_region_screenshot" }] };
+  if (/sleep/.test(msg)) return { actions: [{ type: "sleep_display" }] };
+  if (/wifi\s+on/.test(msg)) return { actions: [{ type: "wifi_on" }] };
+  if (/wifi\s+off/.test(msg)) return { actions: [{ type: "wifi_off" }] };
+
+  const openMatch = msg.match(/open\s+(.+)/);
+  if (openMatch) return { actions: [{ type: "open_app", target: openMatch[1].trim() }] };
+
+  return null; // fall through to LLM parser
+}
+
+
 async function systemController(userQuery) {
+  const fast = fastParseSystemCommand(userQuery);
+  if (fast) {
+    const results = [];
+    for (const action of fast.actions) results.push(await executeAction(action));
+    return { parsed: fast, results };
+  }
+  
   const prompt = `
 You are a system control parser. Convert user request into JSON actions ONLY. No explanation.
 
@@ -80,7 +121,8 @@ User request: ${userQuery}
 `;
 
   const res = await ollama.post({
-    model: "qwen3.5:9b",
+    model: "llama3.2:3b",
+    keep_alive: -1,
     messages: [{ role: "user", content: prompt }],
     stream: false,
     think: false,

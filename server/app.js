@@ -14,6 +14,7 @@ const { runChat } = require("./services/chat");
 const { buildFilesystemIndex } = require("./services/filesystem/indexer");
 const { startFilesystemWatcher } = require("./services/filesystem/watcher");
 const { analyzeLoop } = require("./services/vision/observer");
+const { preWarmModels } = require("./utils/preWarm");
 
 mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 30000,  // default is 30s, but explicitly set
@@ -24,6 +25,7 @@ mongoose.connect(process.env.MONGO_URI, {
   w: 'majority'
 }).then(() => {
   console.log("MongoDB Connected");
+  preWarmModels();
   // (async () => {
   // buildFilesystemIndex()
   //     .then(() => startFilesystemWatcher())
@@ -31,7 +33,7 @@ mongoose.connect(process.env.MONGO_URI, {
   // })();
 });
 
-analyzeLoop();
+// analyzeLoop();
 
 function createServer() {
   const app = express();

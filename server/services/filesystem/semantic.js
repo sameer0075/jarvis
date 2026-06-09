@@ -1,26 +1,31 @@
 const { searchFiles, findBestMatch } = require("./search");
-const { routeFileIntent } = require("./router");
-const { listDirectory, openFile } = require("../tools/filesystem");
-const { openPath } = require("../tools/opener");
+const { routeFileIntent }            = require("./router");
+const { listDirectory }              = require("../tools/filesystem");
+const { openPath }                   = require("../tools/opener");
 
-async function semanticSearch(userQuery) {
-  // Step 1: LLM routes the intent
+async function semanticSearch(userQuery, opts = {}) {
+  // Step 1: LLM routes the intent (llama3.2:3b, already hot from orchestrator)
   const route = await routeFileIntent(userQuery);
 
   if (!route) {
     // Fallback: plain fuzzy search across home
-    const result = await searchFiles({ query: userQuery, searchDir: "home" });
+    const result = await searchFiles({ query: userQuery, searchDir: "home", ...opts });
     return formatSearchResult(result);
   }
 
   const { tool, args } = route;
 
-  // Step 2: Execute the routed tool
   switch (tool) {
+
     case "list_dir": {
       const result = await listDirectory(args.path || "home");
-
-      return { ok: result.ok, type: "list_dir", path: result.path, entries: result.entries, error: result.error };
+      return {
+        ok:      result.ok,
+        type:    "list_dir",
+        path:    result.path,
+        entries: result.entries,
+        error:   result.error,
+      };
     }
 
     case "search_files": {
@@ -39,11 +44,11 @@ async function semanticSearch(userQuery) {
       try {
         await openPath(best.path);
         return {
-          ok:   true,
-          type: "find_and_open",
-          name: best.name,
-          path: best.path,
-          score: best.score,
+          ok:      true,
+          type:    "find_and_open",
+          name:    best.name,
+          path:    best.path,
+          score:   best.score,
           message: `Opened ${best.name}`,
         };
       } catch (e) {

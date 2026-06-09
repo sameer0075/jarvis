@@ -80,7 +80,7 @@ async function listDirectory(dirPath) {
     const entries  = await fs.readdir(resolved, { withFileTypes: true });
 
     const files = await Promise.all(
-      entries.map(async (e) => {
+      entries.filter(e => !e.name.startsWith(".")).map(async (e) => {
         try {
           const fullPath = path.join(resolved, e.name);
           const stat     = await fs.stat(fullPath);
