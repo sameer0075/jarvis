@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Radio, Mic, MicOff } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Radio, Mic, MicOff, Send, Terminal } from "lucide-react";
 import ArcReactor from "./components/ArcReactor.jsx";
 import StatusBar from "./components/StatusBar.jsx";
 import VisionStatus from "./components/VisionStatus.jsx";
+import AgentPanel from "./components/AgentPanel.jsx";
+import ChatPanel from "./components/ChatPanel.jsx";
 import { useJarvis } from "./hooks/useJarvis.js";
 import { useVoice } from "./hooks/useVoice.js";
 import FileBrowser from "./components/FileBrowser.jsx";
 
-/* ── Background Grid ── */
 const GridBg = () => (
   <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.03, pointerEvents: "none" }} preserveAspectRatio="none">
     <defs>
@@ -19,7 +20,6 @@ const GridBg = () => (
   </svg>
 );
 
-/* ── Orbital Ring ── */
 function OrbitalRing({ size, duration, color, delay = 0, reverse = false, thickness = 1, opacity = 0.3 }) {
   return (
     <div style={{
@@ -33,7 +33,6 @@ function OrbitalRing({ size, duration, color, delay = 0, reverse = false, thickn
   );
 }
 
-/* ── Speaking Waveform ── */
 function VoiceWaveform({ active, color = "#ffd166" }) {
   const bars = 28;
   return (
@@ -57,23 +56,26 @@ function VoiceWaveform({ active, color = "#ffd166" }) {
 export default function App() {
   const [init, setInit] = useState(false);
   const [fileBrowser, setFileBrowser] = useState({ open: false, data: null });
+  const [agentPanelOpen, setAgentPanelOpen] = useState(true);
+  const [chatPanelOpen, setChatPanelOpen] = useState(false);
+  const [inputText, setInputText] = useState("");
   const greetedRef = useRef(false);
+  const inputRef = useRef(null);
 
-  const { messages, isThinking, model, models, status, setModel, sendMessage, checkStatus } = useJarvis();
+  const { messages, isThinking, model, models, status, setModel, sendMessage, checkStatus, selectedAgent, setSelectedAgent } = useJarvis();
   const lastAssistant = messages.filter(m => m.role === "assistant").pop();
   const {
     isListening, isSpeaking, transcript, supported,
     handsFreeActive, speak, speakQueue, stopSpeaking,
     startListening, stopListening, toggleHandsFree,
   } = useVoice({
-    onTranscript: (text) => sendMessage(text),
+    onTranscript: (text) => sendMessage(text, selectedAgent),
     onEnd: () => {},
   });
 
   const lastSpokenLenRef = useRef(0);
   const ttsBufferRef = useRef("");
 
-  /* ── Auto-greet on first load ── */
   useEffect(() => {
     if (!init || greetedRef.current) return;
     greetedRef.current = true;
@@ -81,7 +83,6 @@ export default function App() {
     return () => clearTimeout(t);
   }, [init, speak]);
 
-  /* ── Always speak assistant replies (streaming TTS) ── */
   useEffect(() => {
     const last = messages[messages.length - 1];
     if (!last || last.role !== "assistant") return;
@@ -114,7 +115,6 @@ export default function App() {
   }, [messages, speakQueue]);
 
   useEffect(() => {
-    console.log("lastAssistant",lastAssistant, lastAssistant?.widgetData?.filesystem)
     if (lastAssistant?.widgetData?.filesystem) {
       const fsData = lastAssistant.widgetData.filesystem;
       if (fsData.ok && fsData.entries?.length > 0) {
@@ -123,19 +123,30 @@ export default function App() {
     }
   }, [lastAssistant]);
 
-  /* ── Visual state ── */
   const vState = isListening ? "listening" : isSpeaking ? "speaking" : isThinking ? "thinking" : "idle";
   const vColor = { idle: "#00d4ff", listening: "#ff3b5c", thinking: "#00d4ff", speaking: "#ffd166" }[vState];
   const vLabel = { idle: "STANDBY", listening: "LISTENING", thinking: "PROCESSING", speaking: "SPEAKING" }[vState];
 
-  /* ── Manual mic trigger (when not hands-free) ── */
   const handleCenterClick = () => {
     if (handsFreeActive) return;
     if (isListening) stopListening();
     else if (!isSpeaking && !isThinking) startListening();
   };
 
-  /* ── Initialization screen (required for browser audio policy) ── */
+  const handleSubmit = useCallback((e) => {
+    e?.preventDefault();
+    if (!inputText.trim() || isThinking) return;
+    sendMessage(inputText.trim(), selectedAgent);
+    setInputText("");
+  }, [inputText, isThinking, selectedAgent, sendMessage]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   if (!init) {
     return (
       <div style={{
@@ -169,7 +180,6 @@ export default function App() {
     }}>
       <GridBg />
 
-      {/* Scanline */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
         <div style={{
           position: "absolute", left: 0, right: 0, height: "2px",
@@ -178,7 +188,6 @@ export default function App() {
         }} />
       </div>
 
-      {/* ── Header ── */}
       <header style={{
         display: "flex", alignItems: "center", gap: "16px",
         padding: "12px 24px",
@@ -244,117 +253,233 @@ export default function App() {
 
       <StatusBar status={status} model={model} models={models} onModelChange={setModel} onRefresh={checkStatus} />
 
-      {/* ── Main Stage ── */}
-      <main style={{
-        flex: 1, display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        position: "relative", zIndex: 1,
-      }}>
-        {/* Orbital rings */}
-        <div style={{ position: "absolute", width: 420, height: 420, pointerEvents: "none" }}>
-          <OrbitalRing size={280} duration={18} color={vColor} opacity={vState === "idle" ? 0.12 : 0.35} thickness={1} />
-          <OrbitalRing size={340} duration={24} color={vColor} opacity={vState === "idle" ? 0.06 : 0.2} thickness={1} reverse delay={2} />
-          <OrbitalRing size={400} duration={30} color={vColor} opacity={vState === "idle" ? 0.04 : 0.12} thickness={0.5} delay={1} />
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+        
+        <AgentPanel 
+          selectedAgent={selectedAgent}
+          onSelectAgent={setSelectedAgent}
+          isOpen={agentPanelOpen}
+          onToggle={() => setAgentPanelOpen(!agentPanelOpen)}
+          activeAgents={lastAssistant?.activeAgents || []}
+        />
 
-          {vState !== "idle" && (
-            <>
-              <div style={{
-                position: "absolute", top: "50%", left: "50%",
-                width: 280, height: 280, marginLeft: -140, marginTop: -140,
-                borderRadius: "50%", border: `1px solid ${vColor}`,
-                animation: "ripple 2.2s ease-out infinite", opacity: 0.25,
-              }} />
-              <div style={{
-                position: "absolute", top: "50%", left: "50%",
-                width: 280, height: 280, marginLeft: -140, marginTop: -140,
-                borderRadius: "50%", border: `1px solid ${vColor}`,
-                animation: "ripple 2.2s ease-out 0.7s infinite", opacity: 0.15,
-              }} />
-            </>
-          )}
-        </div>
+        <main style={{
+          flex: 1, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          position: "relative", zIndex: 1,
+          transition: "all 0.4s ease",
+        }}>
+          <div style={{ position: "absolute", width: 420, height: 420, pointerEvents: "none" }}>
+            <OrbitalRing size={280} duration={18} color={vColor} opacity={vState === "idle" ? 0.12 : 0.35} thickness={1} />
+            <OrbitalRing size={340} duration={24} color={vColor} opacity={vState === "idle" ? 0.06 : 0.2} thickness={1} reverse delay={2} />
+            <OrbitalRing size={400} duration={30} color={vColor} opacity={vState === "idle" ? 0.04 : 0.12} thickness={0.5} delay={1} />
 
-        {/* Central Reactor — clickable for manual push-to-talk */}
-        <div
-          onClick={handleCenterClick}
-          style={{
-            position: "relative", cursor: handsFreeActive ? "default" : "pointer",
-            filter: `drop-shadow(0 0 ${vState === "idle" ? 24 : 60}px ${vColor}50)`,
-            transform: `scale(${vState === "speaking" ? 1.08 : 1})`,
-            transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1), filter 0.6s ease",
-            zIndex: 2,
-          }}
-          title={handsFreeActive ? "" : "Click to speak"}
-        >
-          <ArcReactor size={240} active={true} listening={isListening} speaking={isSpeaking} />
-
-          {/* Inner pulse ring when listening */}
-          {isListening && (
-            <div style={{
-              position: "absolute", inset: -20, borderRadius: "50%",
-              border: "2px solid rgba(255,59,92,0.3)",
-              animation: "ripple 1.4s ease-out infinite",
-            }} />
-          )}
-        </div>
-
-        {/* Status Text */}
-        <div style={{ marginTop: "48px", textAlign: "center", zIndex: 2, minHeight: "90px" }}>
-          <div style={{
-            fontFamily: "var(--font-display)", fontSize: "11px", letterSpacing: "0.4em",
-            color: vColor, textShadow: `0 0 20px ${vColor}60`, marginBottom: "18px",
-            animation: "decode 0.4s ease-out",
-          }}>
-            J.A.R.V.I.S :: {vLabel}
+            {vState !== "idle" && (
+              <>
+                <div style={{
+                  position: "absolute", top: "50%", left: "50%",
+                  width: 280, height: 280, marginLeft: -140, marginTop: -140,
+                  borderRadius: "50%", border: `1px solid ${vColor}`,
+                  animation: "ripple 2.2s ease-out infinite", opacity: 0.25,
+                }} />
+                <div style={{
+                  position: "absolute", top: "50%", left: "50%",
+                  width: 280, height: 280, marginLeft: -140, marginTop: -140,
+                  borderRadius: "50%", border: `1px solid ${vColor}`,
+                  animation: "ripple 2.2s ease-out 0.7s infinite", opacity: 0.15,
+                }} />
+              </>
+            )}
           </div>
 
-          {isListening && transcript && (
+          <div
+            onClick={handleCenterClick}
+            style={{
+              position: "relative", cursor: handsFreeActive ? "default" : "pointer",
+              filter: `drop-shadow(0 0 ${vState === "idle" ? 24 : 60}px ${vColor}50)`,
+              transform: `scale(${vState === "speaking" ? 1.08 : 1})`,
+              transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1), filter 0.6s ease",
+              zIndex: 2,
+            }}
+            title={handsFreeActive ? "" : "Click to speak"}
+          >
+            <ArcReactor size={200} active={true} listening={isListening} speaking={isSpeaking} />
+
+            {isListening && (
+              <div style={{
+                position: "absolute", inset: -20, borderRadius: "50%",
+                border: "2px solid rgba(255,59,92,0.3)",
+                animation: "ripple 1.4s ease-out infinite",
+              }} />
+            )}
+          </div>
+
+          <div style={{ marginTop: "40px", textAlign: "center", zIndex: 2, minHeight: "90px" }}>
             <div style={{
-              fontFamily: "var(--font-mono)", fontSize: "15px", color: "var(--red-alert)",
-              maxWidth: "520px", textAlign: "center", lineHeight: 1.5,
-              animation: "decode 0.2s ease-out", textShadow: "0 0 12px rgba(255,59,92,0.3)",
+              fontFamily: "var(--font-display)", fontSize: "11px", letterSpacing: "0.4em",
+              color: vColor, textShadow: `0 0 20px ${vColor}60`, marginBottom: "18px",
+              animation: "decode 0.4s ease-out",
             }}>
-              {transcript}
+              J.A.R.V.I.S :: {vLabel}
             </div>
-          )}
 
-          {isSpeaking && (
-            <div style={{ width: "260px", margin: "0 auto" }}>
-              <VoiceWaveform active={true} color={vColor} />
-            </div>
-          )}
+            {isListening && transcript && (
+              <div style={{
+                fontFamily: "var(--font-mono)", fontSize: "15px", color: "var(--red-alert)",
+                maxWidth: "520px", textAlign: "center", lineHeight: 1.5,
+                animation: "decode 0.2s ease-out", textShadow: "0 0 12px rgba(255,59,92,0.3)",
+              }}>
+                {transcript}
+              </div>
+            )}
 
-          {isThinking && (
-            <div style={{ display: "flex", gap: "6px", justifyContent: "center", alignItems: "center", height: "44px" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "rgba(0,212,255,0.4)", letterSpacing: "0.15em", marginRight: "6px" }}>
-                PROCESSING
-              </span>
-              {[0, 1, 2, 3, 4].map(i => (
-                <div key={i} style={{
-                  width: 4, height: 4, borderRadius: "50%", background: "var(--arc-primary)",
-                  animation: `typing-dot 1.4s ${i * 0.12}s ease-in-out infinite`,
-                  boxShadow: i < 3 ? "0 0 6px rgba(0,212,255,0.6)" : "none",
-                }} />
-              ))}
-            </div>
-          )}
+            {isSpeaking && (
+              <div style={{ width: "260px", margin: "0 auto" }}>
+                <VoiceWaveform active={true} color={vColor} />
+              </div>
+            )}
 
-          {!handsFreeActive && !isListening && !isSpeaking && !isThinking && (
+            {isThinking && (
+              <div style={{ display: "flex", gap: "6px", justifyContent: "center", alignItems: "center", height: "44px" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "rgba(0,212,255,0.4)", letterSpacing: "0.15em", marginRight: "6px" }}>
+                  PROCESSING
+                </span>
+                {[0, 1, 2, 3, 4].map(i => (
+                  <div key={i} style={{
+                    width: 4, height: 4, borderRadius: "50%", background: "var(--arc-primary)",
+                    animation: `typing-dot 1.4s ${i * 0.12}s ease-in-out infinite`,
+                    boxShadow: i < 3 ? "0 0 6px rgba(0,212,255,0.6)" : "none",
+                  }} />
+                ))}
+              </div>
+            )}
+
+            {!handsFreeActive && !isListening && !isSpeaking && !isThinking && (
+              <div style={{
+                fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-dim)",
+                letterSpacing: "0.15em", marginTop: "8px", opacity: 0.6,
+              }}>
+                CLICK REACTOR TO SPEAK · OR ENABLE HANDS-FREE
+              </div>
+            )}
+          </div>
+
+          <div style={{
+            position: "absolute", bottom: "80px", left: "50%", transform: "translateX(-50%)",
+            width: "600px", maxWidth: "90vw", zIndex: 10,
+          }}>
+            <form onSubmit={handleSubmit} style={{
+              display: "flex", alignItems: "center", gap: "10px",
+              padding: "10px 16px",
+              background: "rgba(2,4,8,0.9)",
+              border: `1px solid ${isListening ? "rgba(255,59,92,0.4)" : "rgba(0,212,255,0.15)"}`,
+              borderRadius: "4px",
+              backdropFilter: "blur(12px)",
+              boxShadow: isListening ? "0 0 20px rgba(255,59,92,0.1)" : "0 0 20px rgba(0,212,255,0.05)",
+              transition: "all 0.3s ease",
+            }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: "50%",
+                background: selectedAgent === "auto" ? "#00d4ff" : 
+                  selectedAgent === "weather" ? "#4fc3f7" :
+                  selectedAgent === "system" ? "#ff7043" :
+                  selectedAgent === "filesystem" ? "#66bb6a" :
+                  selectedAgent === "news" ? "#ffca28" :
+                  selectedAgent === "time" ? "#ab47bc" :
+                  selectedAgent === "vision" ? "#ec407a" :
+                  "#9e9e9e",
+                boxShadow: `0 0 8px ${selectedAgent === "auto" ? "#00d4ff" : 
+                  selectedAgent === "weather" ? "#4fc3f7" :
+                  selectedAgent === "system" ? "#ff7043" :
+                  selectedAgent === "filesystem" ? "#66bb6a" :
+                  selectedAgent === "news" ? "#ffca28" :
+                  selectedAgent === "time" ? "#ab47bc" :
+                  selectedAgent === "vision" ? "#ec407a" :
+                  "#9e9e9e"}`,
+                flexShrink: 0,
+              }} />
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={selectedAgent === "auto" 
+                  ? "Ask anything... JARVIS will route automatically" 
+                  : `Ask about ${selectedAgent}...`}
+                style={{
+                  flex: 1, background: "transparent", border: "none",
+                  color: "var(--text-primary)", fontFamily: "var(--font-mono)",
+                  fontSize: "13px", outline: "none",
+                  letterSpacing: "0.02em",
+                }}
+              />
+              <button
+                type="submit"
+                disabled={!inputText.trim() || isThinking}
+                style={{
+                  background: inputText.trim() && !isThinking ? "rgba(0,212,255,0.1)" : "transparent",
+                  border: `1px solid ${inputText.trim() && !isThinking ? "rgba(0,212,255,0.3)" : "rgba(0,212,255,0.08)"}`,
+                  borderRadius: "3px", padding: "6px 12px",
+                  color: inputText.trim() && !isThinking ? "var(--arc-primary)" : "var(--text-dim)",
+                  cursor: inputText.trim() && !isThinking ? "pointer" : "default",
+                  fontFamily: "var(--font-mono)", fontSize: "10px",
+                  letterSpacing: "0.1em", transition: "all 0.2s",
+                  display: "flex", alignItems: "center", gap: "4px",
+                }}
+              >
+                <Send size={12} /> SEND
+              </button>
+            </form>
+            
             <div style={{
-              fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-dim)",
-              letterSpacing: "0.15em", marginTop: "8px", opacity: 0.6,
+              textAlign: "center", marginTop: "6px",
+              fontFamily: "var(--font-mono)", fontSize: "9px",
+              color: "var(--text-dim)", letterSpacing: "0.1em", opacity: 0.5,
             }}>
-              CLICK REACTOR TO SPEAK · OR ENABLE HANDS-FREE
+              {selectedAgent === "auto" 
+                ? "AUTO-ROUTING ENABLED — ALL AGENTS ACTIVE" 
+                : `${selectedAgent.toUpperCase()} MODE — CONTEXT-LOCKED CONVERSATION`}
             </div>
-          )}
-        </div>
-        {fileBrowser.open && <FileBrowser
-          initialData={fileBrowser.data}
-          onClose={() => setFileBrowser({ open: false, data: null })}
-        />}
-      </main>
+          </div>
+        </main>
 
-      {/* Bottom hint */}
+        <button
+          onClick={() => setChatPanelOpen(!chatPanelOpen)}
+          style={{
+            position: "absolute", right: chatPanelOpen ? "340px" : "16px", top: "16px",
+            zIndex: 20,
+            background: "rgba(2,4,8,0.9)",
+            border: "1px solid rgba(0,212,255,0.15)",
+            borderRadius: "3px",
+            padding: "8px 12px",
+            color: "var(--arc-primary)",
+            fontFamily: "var(--font-mono)", fontSize: "10px",
+            letterSpacing: "0.1em",
+            cursor: "pointer",
+            display: "flex", alignItems: "center", gap: "6px",
+            backdropFilter: "blur(8px)",
+            transition: "right 0.4s ease, all 0.2s",
+          }}
+        >
+          <Terminal size={12} />
+          {chatPanelOpen ? "CLOSE LOG" : "OPEN LOG"}
+          {messages.filter(m => m.role === "assistant" && !m.streaming).length > 0 && (
+            <span style={{
+              width: 6, height: 6, borderRadius: "50%",
+              background: "var(--green-ok)",
+              boxShadow: "0 0 6px var(--green-ok)",
+            }} />
+          )}
+        </button>
+
+        <ChatPanel 
+          messages={messages}
+          isOpen={chatPanelOpen}
+          onClose={() => setChatPanelOpen(false)}
+        />
+      </div>
+
       <div style={{
         position: "absolute", bottom: "24px", left: 0, right: 0,
         textAlign: "center", zIndex: 5, pointerEvents: "none",
@@ -366,6 +491,11 @@ export default function App() {
           {handsFreeActive ? "CONTINUOUS VOICE INTERFACE ACTIVE" : "STARK INDUSTRIES · LOCAL AI SYSTEM"}
         </span>
       </div>
+
+      {fileBrowser.open && <FileBrowser
+        initialData={fileBrowser.data}
+        onClose={() => setFileBrowser({ open: false, data: null })}
+      />}
     </div>
   );
 }

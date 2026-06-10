@@ -4,7 +4,8 @@ const http = require("http");
 const WebSocket = require("ws");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-const dns = require("dns")
+const dns = require("dns");
+
 dns.setDefaultResultOrder('ipv4first');
 dotenv.config();
 
@@ -17,23 +18,16 @@ const { analyzeLoop } = require("./services/vision/observer");
 const { preWarmModels } = require("./utils/preWarm");
 
 mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 30000,  // default is 30s, but explicitly set
-  connectTimeoutMS: 20000,          // default is 10s — increase for mobile
-  socketTimeoutMS: 45000,          // keep alive longer
-  heartbeatFrequencyMS: 10000,     // less aggressive health checks
+  serverSelectionTimeoutMS: 30000,
+  connectTimeoutMS: 20000,
+  socketTimeoutMS: 45000,
+  heartbeatFrequencyMS: 10000,
   retryWrites: true,
   w: 'majority'
 }).then(() => {
   console.log("MongoDB Connected");
   preWarmModels();
-  // (async () => {
-  // buildFilesystemIndex()
-  //     .then(() => startFilesystemWatcher())
-  //     .catch(e => console.error("[INDEXER] Error:", e.message));
-  // })();
 });
-
-// analyzeLoop();
 
 function createServer() {
   const app = express();
@@ -47,25 +41,20 @@ function createServer() {
   // ── WebSocket ──────────────────────────────────────────────────────────────
   wss.on("connection", (ws) => {
     ws.isAlive = true;
-    ws.on("pong", () => {
-      ws.isAlive = true;
-    });
+    ws.on("pong", () => { ws.isAlive = true; });
 
     ws.on("message", async (raw) => {
       let payload;
       try {
         payload = JSON.parse(raw.toString());
       } catch {
-        return ws.send(
-          JSON.stringify({ type: "error", error: "Invalid JSON" }),
-        );
+        return ws.send(JSON.stringify({ type: "error", error: "Invalid JSON" }));
       }
 
-      const { message, sessionId = "default", model } = payload;
+      // ← NEW: extract selectedAgent from frontend payload
+      const { message, sessionId = "default", model, selectedAgent } = payload;
       if (!message)
-        return ws.send(
-          JSON.stringify({ type: "error", error: "message required" }),
-        );
+        return ws.send(JSON.stringify({ type: "error", error: "message required" }));
 
       const msgs = getSession(sessionId);
       const userMsg = { role: "user", content: message };
@@ -80,15 +69,19 @@ function createServer() {
           model,
           true,
           (chunk) => send({ type: "chunk", content: chunk }),
-          (preMessage) => send({ type: "chunk", content: preMessage }),
+          (preMessage) => send({ type: "status", content: preMessage }),
+          selectedAgent || "auto",   // ← NEW: pass locked agent mode to chat.js
         );
         msgs.push(userMsg);
         msgs.push({ role: "assistant", content: result.raw });
+
+        // ← NEW: send activeAgents back so frontend can show which agents ran
         send({
           type: "done",
           actions: result.actions,
           fullText: result.text,
           widgetData: result.widgetData,
+          activeAgents: result.activeAgents || [],
         });
 
       } catch (err) {

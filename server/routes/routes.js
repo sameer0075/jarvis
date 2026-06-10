@@ -24,7 +24,13 @@ router.get("/status", async (req, res) => {
 router.get("/models", async (req, res) => {
   try {
     const data = await getTags();
-    res.json({ models: data.models || [] });
+    const models = [
+      { name: 'llama3.1:8b' },
+      { name: 'llama3.2:3b' },
+      { name: 'mistral:latest' },
+      { name: 'phi3:mini' }
+    ];
+    res.json({ models: models || [] });
   } catch (e) {
     res.status(503).json({ error: e.message, models: [] });
   }
@@ -36,64 +42,77 @@ router.post("/clear", (req, res) => {
 });
 
 router.post("/chat", async (req, res) => {
-  const { message, sessionId = "default", model } = req.body;
-    if (!message) return res.status(400).json({ error: "message required" });
+  const { message, sessionId = "default", model, selectedAgent } = req.body;  // ← extract selectedAgent
+  if (!message) return res.status(400).json({ error: "message required" });
 
-  const msgs    = getSession(sessionId);
+  const msgs = getSession(sessionId);
   const userMsg = { role: "user", content: message };
 
   try {
-    const result = await runChat([...msgs, userMsg], model, false);
+    const result = await runChat(
+      [...msgs, userMsg],
+      model,
+      false,
+      null,
+      null,
+      selectedAgent || "auto",   // ← pass to chat.js
+    );
     msgs.push(userMsg);
     msgs.push({ role: "assistant", content: result.raw });
-    res.json({ reply: result.text, actions: result.actions, widgetData: result.widgetData, sessionId });
+
+    res.json({
+      reply: result.text,
+      actions: result.actions,
+      widgetData: result.widgetData,
+      activeAgents: result.activeAgents || [],   // ← send back to frontend
+      sessionId,
+    });
   } catch (e) {
     console.error("[REST]", e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-router.get("/trending-news", async (req,res) => {
+router.get("/trending-news", async (req, res) => {
   try {
-    const result = await fetchTrendingNews('bbc-news,cnn,al-jazeera-english,the-verge,reuters,associated-press')
+    const result = await fetchTrendingNews('bbc-news,cnn,al-jazeera-english,the-verge,reuters,associated-press');
     res.json(result);
   } catch (e) {
     console.error("[REST]", e.message);
     res.status(500).json({ error: e.message });
   }
-})
+});
 
-router.get("/search-news/:query", async (req,res) => {
+router.get("/search-news/:query", async (req, res) => {
   try {
-    const result = await fetchQueryNews(req.params.query)
+    const result = await fetchQueryNews(req.params.query);
     res.json(result);
   } catch (e) {
     console.error("[REST]", e.message);
     res.status(500).json({ error: e.message });
   }
-})
+});
 
-router.get("/get-weather-details/:city", async (req,res) => {
+router.get("/get-weather-details/:city", async (req, res) => {
   try {
-    const result = await fetchWeatherDetails(req.params.city)
+    const result = await fetchWeatherDetails(req.params.city);
     res.json(result);
   } catch (e) {
     console.error("[REST]", e.message);
     res.status(500).json({ error: e.message });
   }
-})
+});
 
-router.get("/get-system-stats", async (req,res) => {
+router.get("/get-system-stats", async (req, res) => {
   try {
-    const result = await getSystemStats()
+    const result = await getSystemStats();
     res.json(result);
   } catch (e) {
     console.error("[REST]", e.message);
     res.status(500).json({ error: e.message });
   }
-})
+});
 
-// Replace the existing /fs/search route:
 router.get("/fs/search", async (req, res) => {
   const { query } = req.query;
   if (!query) return res.status(400).json({ error: "query required" });
@@ -101,14 +120,12 @@ router.get("/fs/search", async (req, res) => {
   res.json(result);
 });
 
-// Keep /fs/list as direct (used by FileBrowser UI)
 router.get("/fs/list", async (req, res) => {
   const { path: dirPath = "home" } = req.query;
   const result = await listDirectory(dirPath);
   res.json(result);
 });
 
-// Keep /fs/open as direct (used by FileBrowser double-click)
 router.post("/fs/open", async (req, res) => {
   const { path: filePath } = req.body;
   if (!filePath) return res.status(400).json({ error: "path required" });
@@ -116,7 +133,6 @@ router.post("/fs/open", async (req, res) => {
   res.json(result);
 });
 
-// New: smart open by name
 router.post("/fs/smart-open", async (req, res) => {
   const { query, searchDir = "home" } = req.body;
   if (!query) return res.status(400).json({ error: "query required" });

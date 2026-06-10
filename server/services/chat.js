@@ -6,7 +6,6 @@ const https = require("https");
 const dotenv = require("dotenv");
 dotenv.config();
 
-
 // ── Groq streaming ────────────────────────────────────────────────────────────
 function streamGroq(messages, onChunk, onDone, onError) {
   const chatMsgs = messages.filter((m) => m.role !== "system");
@@ -121,18 +120,6 @@ function streamFinal(ollamaBody, finalMessages, onChunk, onDone, onError) {
   }
 }
 
-// ── Status sequences (kept for future use) ────────────────────────────────────
-const STATUS_SEQUENCES = {
-  weather: [(args) => `Connecting to live weather systems for ${args.city}...`],
-  time: [(args) => `Synchronizing world clocks for ${args.city}...`],
-  news: [(args) => `Scanning global news networks...`],
-  filesystem: [() => `Scanning indexed files and directories...`],
-  system: [() => `Interpreting system-level instruction...`],
-  vision: [() => `Processing visual input...`],
-  chat: [() => `Initializing cognitive systems...`],
-  default: [() => `Initializing cognitive systems...`],
-};
-
 function parseActions(text) {
   const actions = [];
   const urlRe = /\[ACTION:OPEN_URL:([^\]]+)\]/gi;
@@ -149,15 +136,20 @@ function parseActions(text) {
   return { cleanText: text.replace(/\[ACTION:[^\]]+\]/gi, "").trim(), actions };
 }
 
-function buildFinalPrompt(userMessage, agentResults, history) {
+function buildFinalPrompt(userMessage, agentResults, history, selectedAgent) {
   const toolBlocks = agentResults
     .filter((r) => r.result)
     .map((r) => `[AGENT: ${r.agent.toUpperCase()}]\n${r.result}\n[/AGENT]`)
     .join("\n\n");
 
-  const content = toolBlocks
+  let content = toolBlocks
     ? `${userMessage}\n\n<agent_results>\n${toolBlocks}\n</agent_results>\n\nAnswer using the agent results above.`
     : userMessage;
+
+  // CONTEXT LOCK: if user selected a specific agent, tell the LLM to stay in that mode
+  if (selectedAgent && selectedAgent !== "auto" && selectedAgent !== "chat") {
+    content += `\n\n[SYSTEM: You are in ${selectedAgent.toUpperCase()} mode. Only respond to queries related to ${selectedAgent}. If the user asks about something unrelated, politely decline and remind them you are currently in ${selectedAgent.toUpperCase()} mode. Suggest they switch to AUTO mode for general questions.]`;
+  }
 
   return [...history.slice(-6), { role: "user", content }];
 }
@@ -195,13 +187,23 @@ async function runChat(
   stream = false,
   onChunk = null,
   onPreResponse = null,
+  selectedAgent = "auto",   // ← NEW: accepts agent lock from frontend
 ) {
   const lastUser = messages.findLast((m) => m.role === "user");
   const userText = lastUser?.content || "";
   const history = messages.filter((m) => m !== lastUser);
 
-  // 1. Orchestrate
-  const agents = await orchestrate(userText);
+  // 1. Orchestrate OR use locked agent
+  let agents;
+  if (selectedAgent && selectedAgent !== "auto") {
+    // LOCKED MODE: skip orchestrator, force specific agent + chat fallback
+    agents = selectedAgent === "chat" ? ["chat"] : [selectedAgent, "chat"];
+    console.log(`[CHAT] Agent mode LOCKED: [${agents.join(", ")}]`);
+  } else {
+    // AUTO MODE: let orchestrator decide
+    agents = await orchestrate(userText);
+  }
+
   const runningModal = pickModel(userText, agents);
   console.log("[CHAT] model:", runningModal, "agents:", agents);
 
@@ -212,7 +214,7 @@ async function runChat(
   try {
     agentResults = await runAgents(agents, userText);
 
-    // ── Short-circuit: list_dir needs no LLM ──────────────────────────────
+    // Short-circuit: list_dir needs no LLM
     const fsResult = agentResults.find((r) => r.agent === "filesystem");
     if (fsResult) {
       try {
@@ -225,7 +227,7 @@ async function runChat(
           if (stream && onChunk) {
             onChunk(reply);
           }
-          return { text: reply, raw: reply, actions: [], widgetData: wd };
+          return { text: reply, raw: reply, actions: [], widgetData: wd, activeAgents: agents };
         }
       } catch {}
     }
@@ -245,6 +247,7 @@ async function runChat(
       userText,
       agentResults,
       history.filter((m) => m.role !== "system"),
+      selectedAgent,   // ← pass through for context lock
     ),
   ];
 
@@ -283,12 +286,27 @@ async function runChat(
         },
         (fullText) => {
           const { cleanText, actions } = parseActions(fullText);
-          resolve({ text: cleanText, raw: fullText, actions, widgetData });
+          resolve({ text: cleanText, raw: fullText, actions, widgetData, activeAgents: agents });
         },
         reject,
       );
     });
   }
+
+  // Non-streaming fallback (HTTP)
+  return new Promise((resolve, reject) => {
+    let fullText = "";
+    streamFinal(
+      ollamaBody,
+      finalMessages,
+      (chunk) => { fullText += chunk; },
+      (text) => {
+        const { cleanText, actions } = parseActions(text || fullText);
+        resolve({ text: cleanText, raw: text || fullText, actions, widgetData, activeAgents: agents });
+      },
+      reject,
+    );
+  });
 }
 
 module.exports = { runChat };

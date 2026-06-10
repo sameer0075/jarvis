@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
 const SESSION_ID = `jarvis_${Date.now()}`;
-// Always connect WS directly to the backend port, bypassing Vite proxy issues
 const API_BASE = "http://localhost:3001";
 const WS_BASE = "ws://localhost:3001";
 
@@ -11,15 +10,17 @@ export function useJarvis() {
       id: "welcome",
       role: "assistant",
       content:
-        "Good day. I am **JARVIS** — Just A Rather Very Intelligent System.\n\nI'm running locally on your machine via Ollama. I can:\n- **Chat** about anything\n- **Open URLs** and websites on your command\n- **Search** the web for information\n- **Listen** to your voice commands\n\nHow may I assist you today?",
+        "Good day. I am **JARVIS** — Just A Rather Very Intelligent System.\n\nSelect an agent from the left panel, or keep AUTO mode for intelligent routing. How may I assist you today?",
       actions: [],
       ts: Date.now(),
+      activeAgents: ["auto"],
     },
   ]);
   const [isThinking, setIsThinking] = useState(false);
   const [model, setModel] = useState("llama3.2");
   const [models, setModels] = useState([]);
   const [status, setStatus] = useState("checking");
+  const [selectedAgent, setSelectedAgent] = useState("auto");
 
   useEffect(() => {
     checkStatus();
@@ -53,22 +54,27 @@ export function useJarvis() {
   }, []);
 
   const sendMessage = useCallback(
-    async (text) => {
+    async (text, agentMode = "auto") => {
       if (!text.trim() || isThinking) return;
 
-      const userMsg = { id: `u_${Date.now()}`, role: "user", content: text, actions: [], ts: Date.now() };
+      const userMsg = { 
+        id: `u_${Date.now()}`, 
+        role: "user", 
+        content: text, 
+        actions: [], 
+        ts: Date.now(),
+        activeAgents: [agentMode],
+      };
       setMessages((prev) => [...prev, userMsg]);
       setIsThinking(true);
 
       const streamId = `s_${Date.now()}`;
 
-      // Add placeholder streaming message
       setMessages((prev) => [
         ...prev,
-        { id: streamId, role: "assistant", content: "", actions: [], ts: Date.now(), streaming: true },
+        { id: streamId, role: "assistant", content: "", actions: [], ts: Date.now(), streaming: true, activeAgents: [] },
       ]);
 
-      // Try WebSocket first
       let wsSuccess = false;
       try {
         await new Promise((resolve, reject) => {
@@ -82,14 +88,18 @@ export function useJarvis() {
           ws.onopen = () => {
             clearTimeout(timeout);
             wsSuccess = true;
-            ws.send(JSON.stringify({ message: text, sessionId: SESSION_ID, model }));
+            ws.send(JSON.stringify({ 
+              message: text, 
+              sessionId: SESSION_ID, 
+              model,
+              selectedAgent: agentMode,
+            }));
           };
 
           ws.onmessage = (e) => {
             const data = JSON.parse(e.data);
 
             if (data.type === "status") {
-              // Update the streaming placeholder with the pre-response status
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === streamId
@@ -112,8 +122,9 @@ export function useJarvis() {
                         ...m,
                         content: data.fullText,
                         actions: data.actions || [],
-                        widgetData: data.widgetData || null, // ← ADD THIS LINE
+                        widgetData: data.widgetData || null,
                         streaming: false,
+                        activeAgents: data.activeAgents || [],
                       }
                     : m
                 )
@@ -139,12 +150,16 @@ export function useJarvis() {
       } catch (wsErr) {
         console.warn("WS failed, falling back to HTTP:", wsErr.message);
 
-        // HTTP fallback
         try {
           const r = await fetch(`${API_BASE}/api/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: text, sessionId: SESSION_ID, model }),
+            body: JSON.stringify({ 
+              message: text, 
+              sessionId: SESSION_ID, 
+              model,
+              selectedAgent: agentMode,
+            }),
           });
 
           if (!r.ok) {
@@ -156,7 +171,14 @@ export function useJarvis() {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === streamId
-                ? { ...m, content: d.reply, actions: d.actions || [],widgetData: d.widgetData || null, streaming: false }
+                ? { 
+                    ...m, 
+                    content: d.reply, 
+                    actions: d.actions || [],
+                    widgetData: d.widgetData || null, 
+                    streaming: false,
+                    activeAgents: d.activeAgents || [],
+                  }
                 : m
             )
           );
@@ -195,9 +217,10 @@ export function useJarvis() {
         actions: [],
         widgetData: null,
         ts: Date.now(),
+        activeAgents: ["auto"],
       },
     ]);
   }, []);
 
-  return { messages, isThinking, model, models, status, setModel, sendMessage, clearChat, checkStatus };
+  return { messages, isThinking, model, models, status, selectedAgent, setModel, setSelectedAgent, sendMessage, clearChat, checkStatus };
 }
